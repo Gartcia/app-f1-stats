@@ -1,0 +1,58 @@
+import type { Circuit } from "@/types/circuit";
+
+export const circuits: Circuit[] = [
+  {
+    id: "albert-park",
+    name: "Albert Park Circuit",
+    country: "Australia",
+    location: "Melbourne",
+    lengthKm: "5.278",
+    laps: 58,
+    type: "Callejero",
+  },
+  {
+    id: "shanghai",
+    name: "Shanghai International Circuit",
+    country: "China",
+    location: "Shanghai",
+    lengthKm: "5.451",
+    laps: 56,
+    type: "Permanente",
+  },
+  {
+    id: "suzuka",
+    name: "Suzuka Circuit",
+    country: "Japón",
+    location: "Suzuka",
+    lengthKm: "5.807",
+    laps: 53,
+    type: "Permanente",
+  },
+  {
+    id: "bahrain",
+    name: "Bahrain International Circuit",
+    country: "Bahréin",
+    location: "Sakhir",
+    lengthKm: "5.412",
+    laps: 57,
+    type: "Permanente",
+  },
+  {
+    id: "jeddah",
+    name: "Jeddah Corniche Circuit",
+    country: "Arabia Saudita",
+    location: "Jeddah",
+    lengthKm: "6.174",
+    laps: 50,
+    type: "Callejero",
+  },
+  {
+    id: "monza",
+    name: "Autodromo Nazionale Monza",
+    country: "Italia",
+    location: "Monza",
+    lengthKm: "5.793",
+    laps: 53,
+    type: "Permanente",
+  },
+];
