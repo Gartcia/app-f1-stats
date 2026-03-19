@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { circuits } from "@/lib/data/circuits";
 import { CircuitLayoutCard } from "@/components/circuits/circuit-layout-card";
 import { CircuitRecentSessions } from "@/components/circuits/circuit-recent-sessions";
+import { circuits } from "@/lib/data/circuits";
 
 type CircuitDetailPageProps = {
   params: Promise<{
@@ -64,7 +64,7 @@ export default async function CircuitDetailPage({
           <CircuitLayoutCard
             layoutLabel={circuit.layoutLabel}
             layoutImage={circuit.layoutImage}
-            />
+          />
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
@@ -148,7 +148,11 @@ export default async function CircuitDetailPage({
             históricas y relación con sesiones recientes.
           </p>
         </section>
-        <CircuitRecentSessions sessions={circuit.recentSessions} />
+
+        <CircuitRecentSessions
+          circuitId={circuit.id}
+          sessions={circuit.recentSessions}
+        />
       </div>
     </AppShell>
   );

@@ -8,11 +8,30 @@ export type CircuitSessionType =
   | "FP2"
   | "FP3";
 
+export type CircuitSessionResult = {
+  position: number;
+  driver: string;
+  team: string;
+  laps?: number;
+  gap?: string;
+  status?: string;
+};
+
+export type CircuitSessionQuickStats = {
+  winner?: string;
+  pole?: string;
+  fastestLap?: string;
+  topSpeed?: string;
+};
+
 export type CircuitRecentSession = {
+  id: string;
   year: number;
   sessionType: CircuitSessionType;
   date: string;
   headline: string;
+  quickStats?: CircuitSessionQuickStats;
+  top3?: CircuitSessionResult[];
 };
 
 export type Circuit = {
