@@ -1,7 +1,8 @@
-import type { DriverResult } from "@/types/home";
+import type { DriverResult, SessionType } from "@/types/home";
 
 type Props = {
   results: DriverResult[];
+  sessionType: SessionType;
 };
 
 function formatStartPosition(value: number) {
@@ -20,7 +21,16 @@ function formatDeltaPositions(value: number) {
   return String(value);
 }
 
-export function ResultsTable({ results }: Props) {
+function isPracticeSession(sessionType: SessionType) {
+  return sessionType === "fp1" || sessionType === "fp2" || sessionType === "fp3";
+}
+
+export function ResultsTable({ results, sessionType }: Props) {
+  const showGrid = !isPracticeSession(sessionType);
+  const showDelta = !isPracticeSession(sessionType);
+  const showPits = sessionType === "race";
+  const showTyres = sessionType === "race" || sessionType === "qualifying";
+
   return (
     <section className="rounded-2xl border border-white/10 bg-zinc-900 p-4">
       <div className="mb-4">
@@ -36,11 +46,15 @@ export function ResultsTable({ results }: Props) {
               <th className="px-3 py-3">Pos</th>
               <th className="px-3 py-3">Piloto</th>
               <th className="px-3 py-3">Equipo</th>
-              <th className="px-3 py-3">Grid</th>
-              <th className="px-3 py-3">Δ</th>
+
+              {showGrid && <th className="px-3 py-3">Grid</th>}
+              {showDelta && <th className="px-3 py-3">Δ</th>}
+
               <th className="px-3 py-3">Vueltas</th>
-              <th className="px-3 py-3">Pits</th>
-              <th className="px-3 py-3">Neumáticos</th>
+
+              {showPits && <th className="px-3 py-3">Pits</th>}
+              {showTyres && <th className="px-3 py-3">Neumáticos</th>}
+
               <th className="px-3 py-3">Top speed</th>
               <th className="px-3 py-3">Estado</th>
             </tr>
@@ -57,15 +71,24 @@ export function ResultsTable({ results }: Props) {
                   {driver.driverName}
                 </td>
                 <td className="px-3 py-3">{driver.teamName}</td>
-                <td className="px-3 py-3">
-                  {formatStartPosition(driver.startPosition)}
-                </td>
-                <td className="px-3 py-3">
-                  {formatDeltaPositions(driver.deltaPositions)}
-                </td>
+
+                {showGrid && (
+                  <td className="px-3 py-3">
+                    {formatStartPosition(driver.startPosition)}
+                  </td>
+                )}
+
+                {showDelta && (
+                  <td className="px-3 py-3">
+                    {formatDeltaPositions(driver.deltaPositions)}
+                  </td>
+                )}
+
                 <td className="px-3 py-3">{driver.lapsCompleted}</td>
-                <td className="px-3 py-3">{driver.pitStops}</td>
-                <td className="px-3 py-3">{driver.tyres}</td>
+
+                {showPits && <td className="px-3 py-3">{driver.pitStops}</td>}
+                {showTyres && <td className="px-3 py-3">{driver.tyres}</td>}
+
                 <td className="px-3 py-3">{driver.topSpeed}</td>
                 <td className="px-3 py-3">{driver.status}</td>
               </tr>

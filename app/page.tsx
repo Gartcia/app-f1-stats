@@ -51,7 +51,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <SessionSelector selectedType={selectedType} />
           <SessionSummary summary={homeData.summary} />
           <QuickStats stats={homeData.quickStats} />
-          <ResultsTable results={homeData.results} />
+          <ResultsTable results={homeData.results} sessionType={selectedType} />
 
           <section className="rounded-2xl border border-white/10 bg-zinc-900 p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-400">
