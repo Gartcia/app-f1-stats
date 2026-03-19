@@ -1,11 +1,11 @@
 import Link from "next/link";
-import type { Circuit } from "@/types/circuit";
+import type { CircuitListItem } from "@/types/circuit";
 
 type Props = {
-  circuits: Circuit[];
+  circuits: CircuitListItem[];
 };
 
-function getCircuitTypeClasses(type: Circuit["type"]) {
+function getCircuitTypeClasses(type?: CircuitListItem["type"]) {
   switch (type) {
     case "Callejero":
       return "border-orange-500/20 bg-orange-500/10 text-orange-300";
@@ -37,17 +37,25 @@ export function CircuitsList({ circuits }: Props) {
           >
             <div className="border-b border-white/10 bg-gradient-to-br from-white/10 to-transparent p-5">
               <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${getCircuitTypeClasses(
-                    circuit.type
-                  )}`}
-                >
-                  {circuit.type}
-                </span>
+                {circuit.type && (
+                  <span
+                    className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${getCircuitTypeClasses(
+                      circuit.type
+                    )}`}
+                  >
+                    {circuit.type}
+                  </span>
+                )}
 
                 <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
                   {circuit.country}
                 </span>
+
+                {circuit.year && (
+                  <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
+                    {circuit.year}
+                  </span>
+                )}
               </div>
 
               <h3 className="mt-4 text-xl font-semibold text-white">
@@ -58,45 +66,29 @@ export function CircuitsList({ circuits }: Props) {
             </div>
 
             <div className="space-y-4 p-5">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-white/10 bg-black/20 p-3">
                   <p className="text-[11px] uppercase tracking-wide text-zinc-500">
-                    Longitud
+                    Último meeting
                   </p>
                   <p className="mt-2 font-medium text-white">
-                    {circuit.lengthKm} km
+                    {circuit.lastMeetingName ?? "No disponible"}
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-black/20 p-3">
                   <p className="text-[11px] uppercase tracking-wide text-zinc-500">
-                    Vueltas
-                  </p>
-                  <p className="mt-2 font-medium text-white">{circuit.laps}</p>
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">
-                    Primer GP
+                    Layout
                   </p>
                   <p className="mt-2 font-medium text-white">
-                    {circuit.firstGp}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">
-                    Récord
-                  </p>
-                  <p className="mt-2 font-medium text-white">
-                    {circuit.lapRecord}
+                    {circuit.layoutLabel ?? "Sin layout"}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
                 <p className="text-sm text-zinc-400">
-                  Ver detalle, layout y sesiones
+                  Ver detalle, pilotos y sesiones
                 </p>
 
                 <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white transition group-hover:border-white/20 group-hover:bg-white/10">

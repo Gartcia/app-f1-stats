@@ -36,6 +36,18 @@ export type CircuitRecentSession = {
   isAvailable?: boolean;
 };
 
+export type CircuitListItem = {
+  id: string;
+  name: string;
+  country: string;
+  location: string;
+  type?: CircuitType;
+  layoutLabel?: string;
+  layoutImage?: string;
+  lastMeetingName?: string;
+  year?: number;
+};
+
 export type Circuit = {
   id: string;
   name: string;

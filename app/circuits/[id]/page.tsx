@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { CircuitDriversGrid } from "@/components/circuits/circuit-drivers-grid";
 import { CircuitHeroCard } from "@/components/circuits/circuit-hero-card";
 import { CircuitInfoGrid } from "@/components/circuits/circuit-info-grid";
 import { CircuitLayoutCard } from "@/components/circuits/circuit-layout-card";
 import { CircuitRecentSessions } from "@/components/circuits/circuit-recent-sessions";
 import {
   buildCircuitSessionMockId,
+  getDrivers,
   getLatestCompletedMeetingForCircuit,
   getSessionsByMeetingKey,
   mapOpenF1SessionNameToCircuitSessionType,
+  pickPreferredSession,
 } from "@/lib/api/openf1";
 import { circuits } from "@/lib/data/circuits";
 import type { CircuitRecentSession } from "@/types/circuit";
@@ -47,56 +50,89 @@ export default async function CircuitDetailPage({
 
   let recentSessions: CircuitRecentSession[] = circuit.recentSessions ?? [];
 
+  let circuitDrivers: {
+    id: string;
+    fullName: string;
+    acronym: string;
+    number: number;
+    teamName: string;
+    teamColour?: string;
+    headshotUrl?: string | null;
+  }[] = [];
+
   if (latestMeeting) {
-    const openF1Sessions = await getSessionsByMeetingKey(latestMeeting.meeting_key);
+  const openF1Sessions = await getSessionsByMeetingKey(latestMeeting.meeting_key);
 
-    const mappedSessions = openF1Sessions
-      .map((session) => {
-        const mappedType = mapOpenF1SessionNameToCircuitSessionType(
-          session.session_name
-        );
+  const mappedSessionsRaw = openF1Sessions.map((session) => {
+    const mappedType = mapOpenF1SessionNameToCircuitSessionType(
+      session.session_name
+    );
 
-        if (!mappedType) {
-          return null;
-        }
-
-        const sessionId = buildCircuitSessionMockId(
-          circuit.id,
-          session.year,
-          mappedType
-        );
-
-        const hasMockDetail =
-          circuit.recentSessions?.some((item) => item.id === sessionId) ?? false;
-
-        return {
-          id: sessionId,
-          year: session.year,
-          sessionType: mappedType,
-          date: formatSessionDate(session.date_start),
-          headline: `${mappedType} del ${latestMeeting.meeting_name} en ${latestMeeting.location}.`,
-          status: "Completed" as const,
-          isAvailable: hasMockDetail,
-        };
-      })
-      .filter((session): session is CircuitRecentSession => session !== null)
-      .sort((a, b) => {
-        const order = {
-          Race: 0,
-          Qualifying: 1,
-          Sprint: 2,
-          FP3: 3,
-          FP2: 4,
-          FP1: 5,
-        };
-
-        return order[a.sessionType] - order[b.sessionType];
-      });
-
-    if (mappedSessions.length > 0) {
-      recentSessions = mappedSessions;
+    if (!mappedType) {
+      return null;
     }
+
+    const sessionId = buildCircuitSessionMockId(
+      circuit.id,
+      session.year,
+      mappedType
+    );
+
+    const hasSessionDetail = true;
+
+    return {
+      id: sessionId,
+      year: session.year,
+      sessionType: mappedType,
+      date: formatSessionDate(session.date_start),
+      headline: `${mappedType} del ${latestMeeting.meeting_name} en ${latestMeeting.location}.`,
+      status: "Completed" as const,
+      isAvailable: hasSessionDetail,
+    };
+  });
+
+  const mappedSessions: CircuitRecentSession[] = mappedSessionsRaw
+    .filter(
+      (
+        session
+      ): session is Exclude<(typeof mappedSessionsRaw)[number], null> =>
+        session !== null
+    )
+    .sort((a, b) => {
+      const order: Record<CircuitRecentSession["sessionType"], number> = {
+        Race: 0,
+        Qualifying: 1,
+        Sprint: 2,
+        FP3: 3,
+        FP2: 4,
+        FP1: 5,
+      };
+
+      return order[a.sessionType] - order[b.sessionType];
+    });
+
+  if (mappedSessions.length > 0) {
+    recentSessions = mappedSessions;
   }
+
+  const preferredSession = pickPreferredSession(openF1Sessions);
+
+  if (preferredSession) {
+    const drivers = await getDrivers(preferredSession.session_key);
+
+    circuitDrivers = drivers
+      .map((driver) => ({
+        id: `${preferredSession.session_key}-${driver.driver_number}`,
+        fullName: driver.full_name,
+        acronym: driver.name_acronym,
+        number: driver.driver_number,
+        teamName: driver.team_name,
+        teamColour: driver.team_colour,
+        headshotUrl: driver.headshot_url,
+      }))
+      .sort((a, b) => a.number - b.number);
+  }
+}
 
   const displayCountry = latestMeeting?.country_name ?? circuit.country;
   const displayLocation = latestMeeting?.location ?? circuit.location;
@@ -158,6 +194,8 @@ export default async function CircuitDetailPage({
           firstGp={circuit.firstGp}
           lapRecord={circuit.lapRecord}
         />
+
+        <CircuitDriversGrid drivers={circuitDrivers} />
 
         <CircuitRecentSessions
           circuitId={circuit.id}

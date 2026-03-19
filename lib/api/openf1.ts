@@ -49,7 +49,7 @@ type OpenF1SessionResult = {
   duration: number | number[] | null;
 };
 
-type OpenF1Driver = {
+export type OpenF1Driver = {
   meeting_key: number;
   session_key: number;
   driver_number: number;
@@ -57,6 +57,7 @@ type OpenF1Driver = {
   name_acronym: string;
   team_name: string;
   team_colour?: string;
+  headshot_url?: string | null;
 };
 
 type OpenF1StartingGrid = {
@@ -305,10 +306,37 @@ function matchesCircuitMeeting(
     return false;
   }
 
-  return (
-    meetingLocation.includes(circuitLocation) ||
-    circuitLocation.includes(meetingLocation)
+  const meetingAliases = getLocationAliases(meetingLocation);
+  const circuitAliases = getLocationAliases(circuitLocation);
+
+  return meetingAliases.some((meetingAlias) =>
+    circuitAliases.some(
+      (circuitAlias) =>
+        meetingAlias.includes(circuitAlias) ||
+        circuitAlias.includes(meetingAlias)
+    )
   );
+}
+
+function getLocationAliases(value: string) {
+  const normalized = normalizeText(value);
+
+  const aliases: Record<string, string[]> = {
+    shanghai: ["shanghai", "jiading"],
+    jiading: ["jiading", "shanghai"],
+    "sao paulo": ["sao paulo", "interlagos"],
+    interlagos: ["interlagos", "sao paulo"],
+    spielberg: ["spielberg", "red bull ring"],
+    "red bull ring": ["red bull ring", "spielberg"],
+    imola: ["imola", "emilia-romagna"],
+    "emilia-romagna": ["emilia-romagna", "imola"],
+    sakhir: ["sakhir", "bahrain"],
+    bahrain: ["bahrain", "sakhir"],
+    montmelo: ["montmelo", "barcelona"],
+    barcelona: ["barcelona", "montmelo"],
+  };
+
+  return aliases[normalized] ?? [normalized];
 }
 
 export async function getLatestCompletedMeetingForCircuit(
@@ -382,4 +410,63 @@ export function buildCircuitSessionMockId(
   };
 
   return `${year}-${typeMap[sessionType]}-${circuitId}`;
+}
+
+export function pickPreferredSession(sessions: OpenF1Session[]) {
+  const SESSION_PRIORITY = [
+    "Race",
+    "Sprint",
+    "Qualifying",
+    "Sprint Qualifying",
+    "Practice 3",
+    "Practice 2",
+    "Practice 1",
+  ];
+
+  for (const sessionName of SESSION_PRIORITY) {
+    const match = sessions.find((session) => session.session_name === sessionName);
+    if (match) return match;
+  }
+
+  return null;
+}
+
+export function parseCircuitSessionMockId(sessionId: string) {
+  const match = sessionId.match(
+    /^(\d{4})-(race|qualifying|sprint|fp1|fp2|fp3)-(.+)$/
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const [, year, rawType, circuitId] = match;
+
+  const sessionTypeMap = {
+    race: "Race",
+    qualifying: "Qualifying",
+    sprint: "Sprint",
+    fp1: "FP1",
+    fp2: "FP2",
+    fp3: "FP3",
+  } as const;
+
+  return {
+    year: Number(year),
+    circuitId,
+    sessionType: sessionTypeMap[rawType as keyof typeof sessionTypeMap],
+  };
+}
+
+export function findOpenF1SessionByCircuitSessionType(
+  sessions: OpenF1Session[],
+  sessionType: "Race" | "Qualifying" | "Sprint" | "FP1" | "FP2" | "FP3"
+) {
+  return (
+    sessions.find(
+      (session) =>
+        mapOpenF1SessionNameToCircuitSessionType(session.session_name) ===
+        sessionType
+    ) ?? null
+  );
 }

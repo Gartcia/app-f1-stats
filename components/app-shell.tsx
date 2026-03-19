@@ -4,7 +4,13 @@ import { AppHeader } from "@/components/app-header";
 
 type Props = {
   children: ReactNode;
-  activePath: "/" | "/telemetry" | "/strategy" | "/radio" | "/circuits";
+  activePath:
+    | "/"
+    | "/telemetry"
+    | "/strategy"
+    | "/radio"
+    | "/circuits"
+    | "/drivers";
 };
 
 export function AppShell({ children, activePath }: Props) {

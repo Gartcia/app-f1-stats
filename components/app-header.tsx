@@ -6,12 +6,10 @@ export function AppHeader() {
           <p className="text-sm uppercase tracking-[0.2em] text-zinc-400">
             F1 App
           </p>
-          <h1 className="text-2xl font-bold text-white">Home</h1>
+          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
         </div>
 
-        <nav className="text-sm text-zinc-400">
-          MVP inicial
-        </nav>
+        <nav className="text-sm text-zinc-400">MVP inicial</nav>
       </div>
     </header>
   );

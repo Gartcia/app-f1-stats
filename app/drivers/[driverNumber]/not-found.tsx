@@ -1,31 +1,30 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 
-export default function CircuitSessionNotFound() {
+export default function DriverNotFound() {
   return (
-    <AppShell activePath="/circuits">
+    <AppShell activePath="/drivers">
       <div className="space-y-6">
         <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
           <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
-            Sesiones
+            Drivers
           </p>
 
           <h1 className="mt-2 text-2xl font-semibold text-white">
-            Sesión no encontrada
+            Piloto no encontrado
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-  No encontramos la sesión que estás buscando para este circuito.
-  Puede que el enlace esté mal armado o que OpenF1 no tenga datos
-  disponibles para esa sesión.
-</p>
+            No encontramos un piloto con ese número en la última sesión
+            disponible cargada desde OpenF1.
+          </p>
 
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
-              href="/circuits"
+              href="/drivers"
               className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm text-white transition hover:bg-white/15"
             >
-              Volver a circuitos
+              Volver a pilotos
             </Link>
 
             <Link
