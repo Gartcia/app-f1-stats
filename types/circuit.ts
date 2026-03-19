@@ -33,6 +33,7 @@ export type CircuitRecentSession = {
   status?: "Completed" | "Latest" | "Archived";
   quickStats?: CircuitSessionQuickStats;
   results?: CircuitSessionResult[];
+  isAvailable?: boolean;
 };
 
 export type Circuit = {

@@ -276,3 +276,110 @@ export async function getStints(sessionKey: number) {
     return [];
   }
 }
+
+type CircuitLookupInput = {
+  id: string;
+  country: string;
+  location: string;
+};
+
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function matchesCircuitMeeting(
+  meeting: OpenF1Meeting,
+  circuit: CircuitLookupInput
+) {
+  const meetingCountry = normalizeText(meeting.country_name);
+  const meetingLocation = normalizeText(meeting.location);
+
+  const circuitCountry = normalizeText(circuit.country);
+  const circuitLocation = normalizeText(circuit.location);
+
+  if (meetingCountry !== circuitCountry) {
+    return false;
+  }
+
+  return (
+    meetingLocation.includes(circuitLocation) ||
+    circuitLocation.includes(meetingLocation)
+  );
+}
+
+export async function getLatestCompletedMeetingForCircuit(
+  circuit: CircuitLookupInput
+) {
+  const currentYear = new Date().getUTCFullYear();
+
+  const [currentYearMeetings, previousYearMeetings] = await Promise.all([
+    fetchOpenF1<OpenF1Meeting[]>(`/meetings?year=${currentYear}`),
+    fetchOpenF1<OpenF1Meeting[]>(`/meetings?year=${currentYear - 1}`),
+  ]);
+
+  const allMeetings = [...currentYearMeetings, ...previousYearMeetings];
+
+  const matchingMeetings = allMeetings
+    .filter((meeting) => new Date(meeting.date_end).getTime() <= Date.now())
+    .filter((meeting) => matchesCircuitMeeting(meeting, circuit))
+    .sort(
+      (a, b) =>
+        new Date(b.date_end).getTime() - new Date(a.date_end).getTime()
+    );
+
+  return matchingMeetings[0] ?? null;
+}
+
+export function mapOpenF1SessionNameToCircuitSessionType(
+  sessionName: string
+): "Race" | "Qualifying" | "Sprint" | "FP1" | "FP2" | "FP3" | null {
+  if (sessionName === "Race") {
+    return "Race";
+  }
+
+  if (
+    sessionName === "Qualifying" ||
+    sessionName === "Sprint Qualifying"
+  ) {
+    return "Qualifying";
+  }
+
+  if (sessionName === "Sprint") {
+    return "Sprint";
+  }
+
+  if (sessionName === "Practice 1") {
+    return "FP1";
+  }
+
+  if (sessionName === "Practice 2") {
+    return "FP2";
+  }
+
+  if (sessionName === "Practice 3") {
+    return "FP3";
+  }
+
+  return null;
+}
+
+export function buildCircuitSessionMockId(
+  circuitId: string,
+  year: number,
+  sessionType: "Race" | "Qualifying" | "Sprint" | "FP1" | "FP2" | "FP3"
+) {
+  const typeMap: Record<typeof sessionType, string> = {
+    Race: "race",
+    Qualifying: "qualifying",
+    Sprint: "sprint",
+    FP1: "fp1",
+    FP2: "fp2",
+    FP3: "fp3",
+  };
+
+  return `${year}-${typeMap[sessionType]}-${circuitId}`;
+}

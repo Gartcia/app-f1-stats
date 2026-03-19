@@ -23,6 +23,59 @@ function getSessionTypeClasses(sessionType: string) {
   }
 }
 
+function SessionCard({
+  circuitId,
+  session,
+}: {
+  circuitId: string;
+  session: CircuitRecentSession;
+}) {
+  const isAvailable = session.isAvailable ?? true;
+
+  const content = (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${getSessionTypeClasses(
+            session.sessionType
+          )}`}
+        >
+          {session.sessionType}
+        </span>
+
+        <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
+          {session.year}
+        </span>
+
+        <span className="text-xs text-zinc-500">{session.date}</span>
+      </div>
+
+      <p className="mt-3 text-sm leading-6 text-zinc-200">{session.headline}</p>
+
+      <p className="mt-4 text-xs font-medium text-zinc-400">
+        {isAvailable ? "Ver sesión →" : "Detalle próximamente"}
+      </p>
+    </>
+  );
+
+  if (!isAvailable) {
+    return (
+      <div className="block rounded-2xl border border-white/10 bg-black/20 p-4 opacity-80">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/circuits/${circuitId}/sessions/${session.id}`}
+      className="block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/5"
+    >
+      {content}
+    </Link>
+  );
+}
+
 export function CircuitRecentSessions({ circuitId, sessions }: Props) {
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -44,35 +97,11 @@ export function CircuitRecentSessions({ circuitId, sessions }: Props) {
       ) : (
         <div className="mt-4 grid gap-4 xl:grid-cols-2">
           {sessions.map((session) => (
-            <Link
+            <SessionCard
               key={session.id}
-              href={`/circuits/${circuitId}/sessions/${session.id}`}
-              className="block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/5"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${getSessionTypeClasses(
-                    session.sessionType
-                  )}`}
-                >
-                  {session.sessionType}
-                </span>
-
-                <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
-                  {session.year}
-                </span>
-
-                <span className="text-xs text-zinc-500">{session.date}</span>
-              </div>
-
-              <p className="mt-3 text-sm leading-6 text-zinc-200">
-                {session.headline}
-              </p>
-
-              <p className="mt-4 text-xs font-medium text-zinc-400">
-                Ver sesión →
-              </p>
-            </Link>
+              circuitId={circuitId}
+              session={session}
+            />
           ))}
         </div>
       )}
