@@ -12,6 +12,21 @@ export const circuits: Circuit[] = [
     firstGp: 1996,
     lapRecord: "1:19.813",
     layoutLabel: "Layout Melbourne",
+    layoutImage: "/circuits/albert-park.png",
+    recentSessions: [
+      {
+        year: 2024,
+        sessionType: "Race",
+        date: "24 Mar 2024",
+        headline: "Victoria dominante y cierre sólido del GP.",
+      },
+      {
+        year: 2024,
+        sessionType: "Qualifying",
+        date: "23 Mar 2024",
+        headline: "Clasificación ajustada con diferencias mínimas.",
+      },
+    ],
   },
   {
     id: "bahrain",
@@ -24,6 +39,27 @@ export const circuits: Circuit[] = [
     firstGp: 2004,
     lapRecord: "1:31.447",
     layoutLabel: "Layout Sakhir",
+    layoutImage: "/circuits/bahrain.png",
+    recentSessions: [
+      {
+        year: 2024,
+        sessionType: "Race",
+        date: "2 Mar 2024",
+        headline: "Inicio de temporada con estrategia estable y ritmo alto.",
+      },
+      {
+        year: 2024,
+        sessionType: "Qualifying",
+        date: "1 Mar 2024",
+        headline: "La pole se definió con una vuelta final muy fuerte.",
+      },
+      {
+        year: 2024,
+        sessionType: "FP2",
+        date: "29 Feb 2024",
+        headline: "La práctica nocturna marcó tendencias de degradación.",
+      },
+    ],
   },
   {
     id: "jeddah",
@@ -72,6 +108,21 @@ export const circuits: Circuit[] = [
     firstGp: 1950,
     lapRecord: "1:12.909",
     layoutLabel: "Layout Monaco",
+    layoutImage: "/circuits/monaco.png",
+    recentSessions: [
+      {
+        year: 2024,
+        sessionType: "Race",
+        date: "26 May 2024",
+        headline: "Carrera estratégica con pocas oportunidades de sobrepaso.",
+      },
+      {
+        year: 2024,
+        sessionType: "Qualifying",
+        date: "25 May 2024",
+        headline: "La pole volvió a ser clave para definir el fin de semana.",
+      },
+    ],
   },
   {
     id: "silverstone",
@@ -108,6 +159,21 @@ export const circuits: Circuit[] = [
     firstGp: 1950,
     lapRecord: "1:21.046",
     layoutLabel: "Layout Monza",
+    layoutImage: "/circuits/monza.png",
+    recentSessions: [
+      {
+        year: 2024,
+        sessionType: "Race",
+        date: "1 Sep 2024",
+        headline: "Velocidad punta, estrategia fina y cierre apretado.",
+      },
+      {
+        year: 2024,
+        sessionType: "Qualifying",
+        date: "31 Aug 2024",
+        headline: "La clasificación mostró diferencias mínimas en recta.",
+      },
+    ],
   },
   {
     id: "interlagos",
