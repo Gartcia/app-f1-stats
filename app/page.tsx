@@ -5,6 +5,7 @@ import { SessionSelector } from "@/components/home/session-selector";
 import { SessionSummary } from "@/components/home/session-summary";
 import { SessionNotAvailableError } from "@/lib/api/openf1";
 import { getHomeLatestData } from "@/lib/mappers/home-latest.mapper";
+import { AppBottomNav } from "@/components/app-bottom-nav";
 import type { SessionType } from "@/types/home";
 
 type HomePageProps = {
@@ -65,6 +66,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               <span className="rounded-full bg-zinc-800 px-3 py-2">Circuitos</span>
             </div>
           </section>
+
+          <AppBottomNav activePath="/" />
         </div>
       </main>
     );
