@@ -1,3 +1,5 @@
+export type CircuitType = "Permanente" | "Callejero";
+
 export type Circuit = {
   id: string;
   name: string;
@@ -5,5 +7,8 @@ export type Circuit = {
   location: string;
   lengthKm: string;
   laps: number;
-  type: string;
+  type: CircuitType;
+  firstGp: number;
+  lapRecord: string;
+  layoutLabel: string;
 };
