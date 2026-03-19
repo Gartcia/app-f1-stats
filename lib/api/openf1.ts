@@ -78,6 +78,17 @@ type OpenF1Pit = {
   stop_duration?: number | null;
 };
 
+type OpenF1Stint = {
+  meeting_key: number;
+  session_key: number;
+  driver_number: number;
+  stint_number: number;
+  lap_start: number | null;
+  lap_end: number | null;
+  compound: string | null;
+  tyre_age_at_start?: number | null;
+};
+
 export class SessionNotAvailableError extends Error {
   constructor(type: string, meetingName?: string) {
     super(
@@ -91,7 +102,7 @@ export class SessionNotAvailableError extends Error {
 
 async function fetchOpenF1<T>(path: string): Promise<T> {
   const response = await fetch(`${OPENF1_BASE_URL}${path}`, {
-    next: { revalidate: 300 },
+    next: { revalidate: 3600 },
   });
 
   if (!response.ok) {
@@ -239,6 +250,29 @@ export async function getPitStops(sessionKey: number) {
     return await fetchOpenF1<OpenF1Pit[]>(`/pit?session_key=${sessionKey}`);
   } catch (error) {
     console.warn(`No se pudo obtener pit para session_key=${sessionKey}`, error);
+    return [];
+  }
+}
+
+export async function getStints(sessionKey: number) {
+  try {
+    return await fetchOpenF1<OpenF1Stint[]>(`/stints?session_key=${sessionKey}`);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown error";
+
+    if (message.includes("429")) {
+      console.warn(
+        `OpenF1 rate limit en stints para session_key=${sessionKey}. Se usa fallback vacío.`
+      );
+      return [];
+    }
+
+    console.warn(
+      `No se pudo obtener stints para session_key=${sessionKey}`,
+      error
+    );
+
     return [];
   }
 }

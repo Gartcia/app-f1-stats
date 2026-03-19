@@ -9,6 +9,7 @@ import {
   getSessionResults,
   getSessionsByMeetingKey,
   getStartingGrid,
+  getStints,
 } from "@/lib/api/openf1";
 
 function formatSessionDate(date: string) {
@@ -140,21 +141,75 @@ function countPitStopsByDriverNumber(
   return counts;
 }
 
+function normalizeCompound(compound: string | null) {
+  if (!compound) {
+    return null;
+  }
+
+  const value = compound.toUpperCase();
+
+  if (value.includes("SOFT")) return "S";
+  if (value.includes("MEDIUM")) return "M";
+  if (value.includes("HARD")) return "H";
+  if (value.includes("INTER")) return "I";
+  if (value.includes("WET")) return "W";
+
+  return value;
+}
+
+function buildTyresByDriverNumber(
+  stintRows: Awaited<ReturnType<typeof getStints>>
+) {
+  const map = new Map<number, string>();
+
+  const stintsByDriver = new Map<number, typeof stintRows>();
+
+  for (const row of stintRows) {
+    const current = stintsByDriver.get(row.driver_number) ?? [];
+    current.push(row);
+    stintsByDriver.set(row.driver_number, current);
+  }
+
+  for (const [driverNumber, rows] of stintsByDriver.entries()) {
+    const ordered = [...rows].sort((a, b) => a.stint_number - b.stint_number);
+
+    const compounds = ordered
+      .map((row) => normalizeCompound(row.compound))
+      .filter((value): value is string => Boolean(value));
+
+    const uniqueSequence = compounds.filter((compound, index) => {
+      return index === 0 || compounds[index - 1] !== compound;
+    });
+
+    map.set(driverNumber, uniqueSequence.length > 0 ? uniqueSequence.join("-") : "-");
+  }
+
+  return map;
+}
+
 export async function getHomeLatestData(
   type: SessionType
 ): Promise<HomeLatestResponse> {
   const latestMeeting = await getLatestCompletedMeeting();
   const session = await getSessionForMeeting(latestMeeting.meeting_key, type);
 
-  const [weather, meeting, sessionResults, drivers, startingGrid, pitRows] =
-    await Promise.all([
-      getLatestWeatherForSession(session.session_key),
-      getMeetingByKey(session.meeting_key),
-      getSessionResults(session.session_key),
-      getDrivers(session.session_key),
-      resolveStartingGridRows(type, session.session_key, session.meeting_key),
-      getPitStops(session.session_key),
-    ]);
+  const [
+    weather,
+    meeting,
+    sessionResults,
+    drivers,
+    startingGrid,
+    pitRows,
+    stintRows,
+  ] = await Promise.all([
+    getLatestWeatherForSession(session.session_key),
+    getMeetingByKey(session.meeting_key),
+    getSessionResults(session.session_key),
+    getDrivers(session.session_key),
+    resolveStartingGridRows(type, session.session_key, session.meeting_key),
+    getPitStops(session.session_key),
+    getStints(session.session_key),
+  ]);
 
   const driversByNumber = new Map(
     drivers.map((driver) => [driver.driver_number, driver])
@@ -165,6 +220,7 @@ export async function getHomeLatestData(
   );
 
   const pitStopsByDriverNumber = countPitStopsByDriverNumber(pitRows);
+  const tyresByDriverNumber = buildTyresByDriverNumber(stintRows);
 
   const sortedResults = [...sessionResults].sort((a, b) => {
     const aPos = a.position ?? 999;
@@ -213,7 +269,7 @@ export async function getHomeLatestData(
         deltaPositions: getDeltaPositions(startPosition, finalPosition) ?? -999,
         lapsCompleted: result.number_of_laps,
         pitStops: pitStopsByDriverNumber.get(result.driver_number) ?? 0,
-        tyres: "-",
+        tyres: tyresByDriverNumber.get(result.driver_number) ?? "-",
         topSpeed: "-",
         status: formatGapOrStatus(result),
       };
