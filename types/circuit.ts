@@ -30,8 +30,9 @@ export type CircuitRecentSession = {
   sessionType: CircuitSessionType;
   date: string;
   headline: string;
+  status?: "Completed" | "Latest" | "Archived";
   quickStats?: CircuitSessionQuickStats;
-  top3?: CircuitSessionResult[];
+  results?: CircuitSessionResult[];
 };
 
 export type Circuit = {

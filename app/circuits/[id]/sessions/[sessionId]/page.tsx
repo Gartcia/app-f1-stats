@@ -5,6 +5,7 @@ import { SessionQuickStats } from "@/components/circuits/session-quick-stats";
 import { SessionResultsTable } from "@/components/circuits/session-results-table";
 import { SessionSummaryCard } from "@/components/circuits/session-summary-card";
 import { circuits } from "@/lib/data/circuits";
+import { SessionHeroCard } from "@/components/circuits/session-hero-card";
 
 type SessionDetailPageProps = {
   params: Promise<{
@@ -41,36 +42,19 @@ export default async function SessionDetailPage({
             ← Volver al circuito
           </Link>
 
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-            <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
-              Session detail
-            </p>
-
-            <h1 className="mt-2 text-3xl font-semibold text-white">
-              {circuit.name}
-            </h1>
-
-            <p className="mt-2 text-sm text-zinc-400">
-              {session.sessionType} · {session.date}
-            </p>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
-                {session.year}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
-                {session.sessionType}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
-                {circuit.location}
-              </span>
-            </div>
-          </section>
+          <SessionHeroCard
+  circuitName={circuit.name}
+  circuitLocation={circuit.location}
+  sessionType={session.sessionType}
+  sessionDate={session.date}
+  season={session.year}
+  status={session.status}
+/>
         </div>
 
         <SessionSummaryCard headline={session.headline} />
         <SessionQuickStats quickStats={session.quickStats} />
-        <SessionResultsTable results={session.top3} />
+        <SessionResultsTable results={session.results} />
       </div>
     </AppShell>
   );

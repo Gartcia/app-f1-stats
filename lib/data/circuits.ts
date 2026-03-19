@@ -55,7 +55,7 @@ export const circuits: Circuit[] = [
     fastestLap: "Max Verstappen",
     topSpeed: "334.5 km/h",
   },
-  top3: [
+  results: [
     {
       position: 1,
       driver: "Max Verstappen",
@@ -92,7 +92,7 @@ export const circuits: Circuit[] = [
     pole: "Max Verstappen",
     topSpeed: "332.1 km/h",
   },
-  top3: [
+  results: [
     {
       position: 1,
       driver: "Max Verstappen",
@@ -126,7 +126,7 @@ export const circuits: Circuit[] = [
     fastestLap: "Lewis Hamilton",
     topSpeed: "330.8 km/h",
   },
-  top3: [
+  results: [
     {
       position: 1,
       driver: "Lewis Hamilton",

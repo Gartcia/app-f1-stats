@@ -1,47 +1,42 @@
+import type { CircuitSessionQuickStats } from "@/types/circuit";
+
 type Props = {
-  quickStats?: {
-    winner?: string;
-    pole?: string;
-    fastestLap?: string;
-    topSpeed?: string;
-  };
+  quickStats?: CircuitSessionQuickStats;
 };
+
+type StatCardProps = {
+  label: string;
+  value: string;
+};
+
+function StatCard({ label, value }: StatCardProps) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+        {label}
+      </p>
+      <p className="mt-3 text-lg font-semibold text-white">{value}</p>
+    </div>
+  );
+}
 
 export function SessionQuickStats({ quickStats }: Props) {
   return (
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <p className="text-xs uppercase tracking-wide text-zinc-400">
-          Ganador
+    <section className="space-y-3">
+      <div>
+        <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
+          Quick stats
         </p>
-        <p className="mt-2 text-base font-medium text-white">
-          {quickStats?.winner ?? "—"}
-        </p>
+        <h2 className="mt-2 text-lg font-semibold text-white">
+          Resumen rápido de la sesión
+        </h2>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <p className="text-xs uppercase tracking-wide text-zinc-400">Pole</p>
-        <p className="mt-2 text-base font-medium text-white">
-          {quickStats?.pole ?? "—"}
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <p className="text-xs uppercase tracking-wide text-zinc-400">
-          Fastest lap
-        </p>
-        <p className="mt-2 text-base font-medium text-white">
-          {quickStats?.fastestLap ?? "—"}
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <p className="text-xs uppercase tracking-wide text-zinc-400">
-          Top speed
-        </p>
-        <p className="mt-2 text-base font-medium text-white">
-          {quickStats?.topSpeed ?? "—"}
-        </p>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Ganador" value={quickStats?.winner ?? "—"} />
+        <StatCard label="Pole" value={quickStats?.pole ?? "—"} />
+        <StatCard label="Fastest lap" value={quickStats?.fastestLap ?? "—"} />
+        <StatCard label="Top speed" value={quickStats?.topSpeed ?? "—"} />
       </div>
     </section>
   );
