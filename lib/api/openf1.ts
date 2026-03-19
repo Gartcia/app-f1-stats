@@ -1,0 +1,244 @@
+const OPENF1_BASE_URL = "https://api.openf1.org/v1";
+
+export type OpenF1Session = {
+  session_key: number;
+  meeting_key: number;
+  session_type: string;
+  session_name: string;
+  meeting_name?: string;
+  circuit_short_name: string;
+  country_name: string;
+  location: string;
+  date_start: string;
+  date_end: string;
+  gmt_offset?: string;
+  year: number;
+};
+
+export type OpenF1Meeting = {
+  meeting_key: number;
+  meeting_name: string;
+  meeting_official_name?: string;
+  location: string;
+  country_name: string;
+  circuit_short_name: string;
+  date_start: string;
+  date_end: string;
+  year: number;
+};
+
+type OpenF1Weather = {
+  air_temperature: number;
+  track_temperature: number;
+  humidity: number;
+  rainfall: number;
+  wind_speed: number;
+  date: string;
+};
+
+type OpenF1SessionResult = {
+  position: number | null;
+  driver_number: number;
+  number_of_laps: number;
+  dnf: boolean;
+  dns: boolean;
+  dsq: boolean;
+  gap_to_leader: number | string | null;
+  meeting_key: number;
+  session_key: number;
+  duration: number | number[] | null;
+};
+
+type OpenF1Driver = {
+  meeting_key: number;
+  session_key: number;
+  driver_number: number;
+  full_name: string;
+  name_acronym: string;
+  team_name: string;
+  team_colour?: string;
+};
+
+type OpenF1StartingGrid = {
+  driver_number: number;
+  lap_duration: number;
+  meeting_key: number;
+  position: number;
+  session_key: number;
+};
+
+type OpenF1Pit = {
+  date: string;
+  driver_number: number;
+  lane_duration: number;
+  lap_number: number;
+  meeting_key: number;
+  pit_duration?: number;
+  session_key: number;
+  stop_duration?: number | null;
+};
+
+export class SessionNotAvailableError extends Error {
+  constructor(type: string, meetingName?: string) {
+    super(
+      meetingName
+        ? `No hay sesión disponible para type=${type} en ${meetingName}`
+        : `No hay sesión disponible para type=${type}`
+    );
+    this.name = "SessionNotAvailableError";
+  }
+}
+
+async function fetchOpenF1<T>(path: string): Promise<T> {
+  const response = await fetch(`${OPENF1_BASE_URL}${path}`, {
+    next: { revalidate: 300 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenF1 error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function getSessionNamesByType(
+  type: "race" | "qualifying" | "fp1" | "fp2" | "fp3"
+) {
+  if (type === "race") {
+    return ["Race"];
+  }
+
+  if (type === "qualifying") {
+    return ["Qualifying", "Sprint Qualifying"];
+  }
+
+  if (type === "fp1") {
+    return ["Practice 1"];
+  }
+
+  if (type === "fp2") {
+    return ["Practice 2"];
+  }
+
+  return ["Practice 3"];
+}
+
+export async function getLatestCompletedMeeting(): Promise<OpenF1Meeting> {
+  const currentYear = new Date().getUTCFullYear();
+
+  const meetings = await fetchOpenF1<OpenF1Meeting[]>(
+    `/meetings?year=${currentYear}`
+  );
+
+  const completedMeetings = meetings
+    .filter((meeting) => new Date(meeting.date_end).getTime() <= Date.now())
+    .sort(
+      (a, b) =>
+        new Date(b.date_end).getTime() - new Date(a.date_end).getTime()
+    );
+
+  if (completedMeetings.length > 0) {
+    return completedMeetings[0];
+  }
+
+  const previousYearMeetings = await fetchOpenF1<OpenF1Meeting[]>(
+    `/meetings?year=${currentYear - 1}`
+  );
+
+  const completedPreviousYearMeetings = previousYearMeetings
+    .filter((meeting) => new Date(meeting.date_end).getTime() <= Date.now())
+    .sort(
+      (a, b) =>
+        new Date(b.date_end).getTime() - new Date(a.date_end).getTime()
+    );
+
+  if (completedPreviousYearMeetings.length === 0) {
+    throw new Error("No se encontró un meeting finalizado");
+  }
+
+  return completedPreviousYearMeetings[0];
+}
+
+export async function getMeetingByKey(meetingKey: number) {
+  const meetings = await fetchOpenF1<OpenF1Meeting[]>(
+    `/meetings?meeting_key=${meetingKey}`
+  );
+
+  return meetings[0] ?? null;
+}
+
+export async function getSessionsByMeetingKey(meetingKey: number) {
+  return fetchOpenF1<OpenF1Session[]>(`/sessions?meeting_key=${meetingKey}`);
+}
+
+export async function getSessionForMeeting(
+  meetingKey: number,
+  type: "race" | "qualifying" | "fp1" | "fp2" | "fp3"
+): Promise<OpenF1Session> {
+  const sessions = await getSessionsByMeetingKey(meetingKey);
+  const allowedNames = getSessionNamesByType(type);
+
+  const matchingSessions = sessions
+    .filter((session) => allowedNames.includes(session.session_name))
+    .sort(
+      (a, b) =>
+        new Date(b.date_start).getTime() - new Date(a.date_start).getTime()
+    );
+
+  const selected = matchingSessions[0];
+
+  if (!selected) {
+    const meeting = await getMeetingByKey(meetingKey);
+    throw new SessionNotAvailableError(type, meeting?.meeting_name);
+  }
+
+  return selected;
+}
+
+export async function getLatestWeatherForSession(sessionKey: number) {
+  const weather = await fetchOpenF1<OpenF1Weather[]>(
+    `/weather?session_key=${sessionKey}`
+  );
+
+  if (weather.length === 0) {
+    return null;
+  }
+
+  return weather.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  )[0];
+}
+
+export async function getSessionResults(sessionKey: number) {
+  return fetchOpenF1<OpenF1SessionResult[]>(
+    `/session_result?session_key=${sessionKey}`
+  );
+}
+
+export async function getDrivers(sessionKey: number) {
+  return fetchOpenF1<OpenF1Driver[]>(`/drivers?session_key=${sessionKey}`);
+}
+
+export async function getStartingGrid(sessionKey: number) {
+  try {
+    return await fetchOpenF1<OpenF1StartingGrid[]>(
+      `/starting_grid?session_key=${sessionKey}`
+    );
+  } catch (error) {
+    console.warn(
+      `No se pudo obtener starting_grid para session_key=${sessionKey}`,
+      error
+    );
+
+    return [];
+  }
+}
+
+export async function getPitStops(sessionKey: number) {
+  try {
+    return await fetchOpenF1<OpenF1Pit[]>(`/pit?session_key=${sessionKey}`);
+  } catch (error) {
+    console.warn(`No se pudo obtener pit para session_key=${sessionKey}`, error);
+    return [];
+  }
+}
