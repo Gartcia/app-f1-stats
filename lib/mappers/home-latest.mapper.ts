@@ -122,12 +122,6 @@ function getDeltaPositions(
   return startPosition - finalPosition;
 }
 
-function getPrimaryStatLabel(type: SessionType) {
-  if (type === "race") return "Ganador";
-  if (type === "qualifying") return "Pole";
-  return "Más rápido";
-}
-
 function countPitStopsByDriverNumber(
   pitRows: Awaited<ReturnType<typeof getPitStops>>
 ) {
@@ -161,7 +155,6 @@ function buildTyresByDriverNumber(
   stintRows: Awaited<ReturnType<typeof getStints>>
 ) {
   const map = new Map<number, string>();
-
   const stintsByDriver = new Map<number, typeof stintRows>();
 
   for (const row of stintRows) {
@@ -185,6 +178,136 @@ function buildTyresByDriverNumber(
   }
 
   return map;
+}
+
+function getDriverName(
+  driversByNumber: Map<number, { full_name: string }>,
+  driverNumber: number | undefined
+) {
+  if (driverNumber == null) {
+    return "-";
+  }
+
+  return driversByNumber.get(driverNumber)?.full_name ?? `#${driverNumber}`;
+}
+
+function getFirstCompoundFromSequence(sequence: string | undefined) {
+  if (!sequence || sequence === "-") {
+    return "-";
+  }
+
+  return sequence.split("-")[0] ?? "-";
+}
+
+function buildQuickStats(params: {
+  type: SessionType;
+  sortedResults: Array<{
+    position: number | null;
+    driver_number: number;
+  }>;
+  driversByNumber: Map<number, { full_name: string }>;
+  tyresByDriverNumber: Map<number, string>;
+  startingGridByDriverNumber: Map<number, { position: number }>;
+}) {
+  const { type, sortedResults, driversByNumber, tyresByDriverNumber, startingGridByDriverNumber } =
+    params;
+
+  const p1 = sortedResults.find((result) => result.position === 1);
+  const p2 = sortedResults.find((result) => result.position === 2);
+  const p3 = sortedResults.find((result) => result.position === 3);
+
+  if (type === "race") {
+    let bestGainDriverName = "-";
+    let bestGainValue = 0;
+
+    for (const result of sortedResults) {
+      const startPosition =
+        startingGridByDriverNumber.get(result.driver_number)?.position ?? null;
+
+      if (startPosition == null || result.position == null) {
+        continue;
+      }
+
+      const delta = startPosition - result.position;
+
+      if (delta > bestGainValue) {
+        bestGainValue = delta;
+        bestGainDriverName = getDriverName(driversByNumber, result.driver_number);
+      }
+    }
+
+    return [
+      {
+        label: "Ganador",
+        value: getDriverName(driversByNumber, p1?.driver_number),
+      },
+      {
+        label: "Pole",
+        value:
+          getDriverName(
+            driversByNumber,
+            Array.from(startingGridByDriverNumber.entries()).find(
+              ([, row]) => row.position === 1
+            )?.[0]
+          ) ?? "-",
+      },
+      {
+        label: "Mayor avance",
+        value:
+          bestGainValue > 0 ? `${bestGainDriverName} (+${bestGainValue})` : "-",
+      },
+      {
+        label: "Neumático ganador",
+        value: getFirstCompoundFromSequence(
+          tyresByDriverNumber.get(p1?.driver_number ?? -1)
+        ),
+      },
+    ];
+  }
+
+  if (type === "qualifying") {
+    return [
+      {
+        label: "Pole",
+        value: getDriverName(driversByNumber, p1?.driver_number),
+      },
+      {
+        label: "P2",
+        value: getDriverName(driversByNumber, p2?.driver_number),
+      },
+      {
+        label: "P3",
+        value: getDriverName(driversByNumber, p3?.driver_number),
+      },
+      {
+        label: "Compuesto pole",
+        value: getFirstCompoundFromSequence(
+          tyresByDriverNumber.get(p1?.driver_number ?? -1)
+        ),
+      },
+    ];
+  }
+
+  return [
+    {
+      label: "Más rápido",
+      value: getDriverName(driversByNumber, p1?.driver_number),
+    },
+    {
+      label: "P2",
+      value: getDriverName(driversByNumber, p2?.driver_number),
+    },
+    {
+      label: "P3",
+      value: getDriverName(driversByNumber, p3?.driver_number),
+    },
+    {
+      label: "Compuesto más rápido",
+      value: getFirstCompoundFromSequence(
+        tyresByDriverNumber.get(p1?.driver_number ?? -1)
+      ),
+    },
+  ];
 }
 
 export async function getHomeLatestData(
@@ -228,11 +351,6 @@ export async function getHomeLatestData(
     return aPos - bPos;
   });
 
-  const leader = sortedResults.find((result) => result.position === 1);
-  const leaderDriver = leader
-    ? driversByNumber.get(leader.driver_number)
-    : null;
-
   return {
     summary: {
       grandPrixName: resolveGrandPrixName(meeting),
@@ -244,15 +362,13 @@ export async function getHomeLatestData(
       sessionType: session.session_name,
       weatherSummary: buildWeatherSummary(weather),
     },
-    quickStats: [
-      {
-        label: getPrimaryStatLabel(type),
-        value: leaderDriver?.full_name ?? "-",
-      },
-      { label: "Sesión", value: session.session_name },
-      { label: "Temporada", value: String(session.year) },
-      { label: "Fuente", value: "OpenF1" },
-    ],
+    quickStats: buildQuickStats({
+      type,
+      sortedResults,
+      driversByNumber,
+      tyresByDriverNumber,
+      startingGridByDriverNumber,
+    }),
     results: sortedResults.map((result) => {
       const driver = driversByNumber.get(result.driver_number);
       const startPosition = getStartPosition(
