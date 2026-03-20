@@ -1,4 +1,4 @@
-import type { CircuitRecentSession } from "@/types/circuit";
+import type { CircuitWeekendSession } from "@/types/circuit";
 
 type Props = {
   circuitName: string;
@@ -6,7 +6,7 @@ type Props = {
   sessionType: string;
   sessionDate: string;
   season: number;
-  status?: CircuitRecentSession["status"];
+  status?: CircuitWeekendSession["status"];
 };
 
 function getSessionTypeClasses(sessionType: string) {
