@@ -7,6 +7,7 @@ import { CircuitInfoGrid } from "@/components/circuits/circuit-info-grid";
 import { CircuitLayoutCard } from "@/components/circuits/circuit-layout-card";
 import { CircuitRecentSessions } from "@/components/circuits/circuit-recent-sessions";
 import { getCircuitDetailData } from "@/lib/mappers/circuit-detail.mapper";
+import { SectionCard } from "@/components/ui/section-card";
 
 type CircuitDetailPageProps = {
   params: Promise<{
@@ -50,15 +51,9 @@ export default async function CircuitDetailPage({
             layoutImage={circuit.layoutImage}
           />
 
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
-              Resumen
-            </p>
-
-            <h2 className="mt-2 text-lg font-semibold text-white">
-              Visión general del trazado
-            </h2>
-
+          <SectionCard      eyebrow="Resumen"
+            title="Visión general del trazado"
+            description="Una vista general del diseño del circuito, mostrando su ubicación, tipo y características principales.">
             <p className="mt-4 text-sm leading-7 text-zinc-300">
               {circuit.name} está ubicado en {circuit.location}, {circuit.country}.
               {circuit.type ? ` Es un circuito de tipo ${circuit.type.toLowerCase()}.` : ""}
@@ -68,7 +63,7 @@ export default async function CircuitDetailPage({
               Esta ficha usa meetings, sesiones y pilotos reales de OpenF1,
               complementados con metadata visual local para layouts e identidad del circuito.
             </p>
-          </section>
+          </SectionCard>
         </div>
 
         <CircuitInfoGrid

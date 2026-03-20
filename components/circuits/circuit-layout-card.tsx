@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { SectionCard } from "../ui/section-card";
 
 type Props = {
   layoutLabel: string;
@@ -7,15 +8,9 @@ type Props = {
 
 export function CircuitLayoutCard({ layoutLabel, layoutImage }: Props) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
-          Layout
-        </p>
-        <h2 className="mt-2 text-lg font-semibold text-white">
-          Trazado del circuito
-        </h2>
-      </div>
+    <SectionCard      eyebrow="Diseño del circuito"
+      title="Vista general del circuito"
+      description="Una representación visual del diseño del circuito, mostrando su configuración, curvas, rectas y cualquier característica distintiva que lo haga único.">
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
         {layoutImage ? (
@@ -38,6 +33,6 @@ export function CircuitLayoutCard({ layoutLabel, layoutImage }: Props) {
           </div>
         )}
       </div>
-    </section>
+    </SectionCard>
   );
 }

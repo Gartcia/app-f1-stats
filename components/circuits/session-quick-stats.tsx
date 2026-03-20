@@ -1,4 +1,5 @@
 import type { CircuitSessionQuickStats } from "@/types/circuit";
+import { SectionCard } from "../ui/section-card";
 
 type Props = {
   quickStats?: CircuitSessionQuickStats;
@@ -22,15 +23,9 @@ function StatCard({ label, value }: StatCardProps) {
 
 export function SessionQuickStats({ quickStats }: Props) {
   return (
-    <section className="space-y-3">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
-          Quick stats
-        </p>
-        <h2 className="mt-2 text-lg font-semibold text-white">
-          Resumen rápido de la sesión
-        </h2>
-      </div>
+    <SectionCard      eyebrow="Resumen rápido"
+      title="Estadísticas de la sesión"
+      description="Información clave sobre el desempeño de los pilotos en esta sesión.">
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Ganador" value={quickStats?.winner ?? "—"} />
@@ -38,6 +33,6 @@ export function SessionQuickStats({ quickStats }: Props) {
         <StatCard label="Fastest lap" value={quickStats?.fastestLap ?? "—"} />
         <StatCard label="Top speed" value={quickStats?.topSpeed ?? "—"} />
       </div>
-    </section>
+    </SectionCard>
   );
 }

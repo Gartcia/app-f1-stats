@@ -8,6 +8,7 @@ import {
   getDriverDetailData,
   getDriverRecentWeekends,
 } from "@/lib/mappers/drivers.mapper";
+import { PageHeader } from "@/components/ui/page-header";
 
 type DriverDetailPageProps = {
   params: Promise<{
@@ -37,25 +38,15 @@ const [driver, recentWeekends] = await Promise.all([
   return (
     <AppShell activePath="/drivers">
       <div className="space-y-6">
-        <Link
-          href="/drivers"
-          className="inline-flex text-sm text-zinc-400 transition hover:text-white"
-        >
-          ← Volver a pilotos
-        </Link>
 
-        <DriverHeroCard
-          fullName={driver.fullName}
-          driverNumber={driver.driverNumber}
-          acronym={driver.acronym}
-          teamName={driver.teamName}
-          teamColour={driver.teamColour}
-          headshotUrl={driver.headshotUrl}
-          meetingName={driver.meetingName}
-          location={driver.location}
-          country={driver.country}
-          sessionName={driver.sessionName}
-        />
+        <PageHeader
+  backHref="/drivers"
+  backLabel="Volver a pilotos"
+  eyebrow={driver.teamName}
+  title={driver.fullName}
+  description={`${driver.location}, ${driver.country} · ${driver.sessionName}`}
+  watermark={`#${driver.driverNumber}`}
+/>
 
         <DriverRecentResults
   meetingName={driver.meetingName}

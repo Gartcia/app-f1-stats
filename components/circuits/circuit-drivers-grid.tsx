@@ -1,3 +1,5 @@
+import { SectionCard } from "../ui/section-card";
+
 type DriverCard = {
   id: string;
   fullName: string;
@@ -32,15 +34,9 @@ function DriverAvatar({ driver }: { driver: DriverCard }) {
 
 export function CircuitDriversGrid({ drivers }: Props) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-zinc-950/60 p-6">
-      <div className="mb-5">
-        <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">
-          Pilotos
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold text-white">
-          Grilla real de la última fecha
-        </h2>
-      </div>
+    <SectionCard      eyebrow="Pilotos destacados"
+      title="Pilotos en la última sesión del circuito"
+      description="Una selección de los pilotos que participaron en la última sesión disponible de este circuito, mostrando su número, nombre completo, equipo, y la sesión específica en la que compitieron.">
 
       {drivers.length === 0 ? (
         <p className="text-sm text-zinc-400">
@@ -78,6 +74,6 @@ export function CircuitDriversGrid({ drivers }: Props) {
           ))}
         </div>
       )}
-    </section>
+    </SectionCard>
   );
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { DriverListItem } from "@/lib/mappers/drivers.mapper";
+import { SectionCard } from "../ui/section-card";
 
 type Props = {
   drivers: DriverListItem[];
@@ -25,15 +26,9 @@ function DriverAvatar({ driver }: { driver: DriverListItem }) {
 
 export function DriversGrid({ drivers }: Props) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-zinc-950/60 p-6">
-      <div className="mb-5">
-        <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">
-          Drivers
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold text-white">
-          Grilla de pilotos
-        </h2>
-      </div>
+    <SectionCard      eyebrow="Pilotos destacados"
+      title="Pilotos en la última sesión"
+      description="Una selección de los pilotos que participaron en la última sesión disponible, mostrando su número, nombre completo, equipo, y la sesión específica en la que compitieron.">
 
       {drivers.length === 0 ? (
         <p className="text-sm text-zinc-400">
@@ -74,6 +69,6 @@ export function DriversGrid({ drivers }: Props) {
           ))}
         </div>
       )}
-    </section>
+    </SectionCard>
   );
 }

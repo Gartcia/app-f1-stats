@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { CircuitWeekend, CircuitWeekendSession } from "@/types/circuit";
+import { SectionCard } from "../ui/section-card";
 
 type Props = {
   circuitId: string;
@@ -9,23 +10,23 @@ type Props = {
 function getSessionTypeClasses(sessionType: string) {
   switch (sessionType) {
     case "Race":
-      return "border-red-500/20 bg-red-500/10 text-red-300";
+      return "border-[#E10600]/30 bg-[linear-gradient(90deg,rgba(225,6,0,0.18)_0%,rgba(142,4,0,0.18)_100%)] text-white";
     case "Qualifying":
-      return "border-purple-500/20 bg-purple-500/10 text-purple-300";
+      return "border-purple-500/30 bg-purple-500/10 text-purple-300";
     case "Sprint":
-      return "border-orange-500/20 bg-orange-500/10 text-orange-300";
+      return "border-orange-500/30 bg-orange-500/10 text-orange-300";
     case "Sprint Shootout":
-      return "border-amber-500/20 bg-amber-500/10 text-amber-300";
+      return "border-amber-500/30 bg-amber-500/10 text-amber-300";
     case "FP1":
     case "FP2":
     case "FP3":
-      return "border-sky-500/20 bg-sky-500/10 text-sky-300";
+      return "border-sky-500/30 bg-sky-500/10 text-sky-300";
     default:
-      return "border-white/10 bg-white/5 text-zinc-300";
+      return "border-white/10 bg-white/[0.04] text-[#949498]";
   }
 }
 
-function SessionPill({
+function SessionTag({
   circuitId,
   session,
 }: {
@@ -34,92 +35,104 @@ function SessionPill({
 }) {
   const isAvailable = session.isAvailable ?? true;
 
+  const classes = `inline-flex items-center rounded-[4px] border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${getSessionTypeClasses(
+    session.sessionType
+  )}`;
+
   if (!isAvailable) {
-    return (
-      <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-500">
-        {session.sessionType}
-      </span>
-    );
+    return <span className={`${classes} opacity-70`}>{session.sessionType}</span>;
   }
 
   return (
     <Link
       href={`/circuits/${circuitId}/sessions/${session.sessionKey}`}
-      className={`inline-flex rounded-full border px-3 py-2 text-sm font-medium transition hover:border-white/20 hover:opacity-90 ${getSessionTypeClasses(
-        session.sessionType
-      )}`}
+      className={`${classes} transition hover:brightness-110 hover:shadow-[0_0_14px_rgba(225,6,0,0.12)]`}
     >
       {session.sessionType}
     </Link>
   );
 }
 
+function MetaChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex rounded-[4px] border border-white/10 bg-black/20 px-2.5 py-1 font-mono text-[11px] text-white/80">
+      {children}
+    </span>
+  );
+}
+
 export function CircuitRecentSessions({ circuitId, weekends }: Props) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
-          GPs recientes
-        </p>
-        <h2 className="mt-2 text-lg font-semibold text-white">
-          Actividad reciente en este circuito
-        </h2>
-      </div>
+    <SectionCard      eyebrow="GPs recientes"
+      title="Sesiones recientes"
+      description="Un resumen de las últimas sesiones que se llevaron a cabo en este circuito.">
 
       {!weekends || weekends.length === 0 ? (
-        <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-black/20 p-6">
-          <p className="text-sm leading-6 text-zinc-400">
+        <div className="rounded-[8px] border border-dashed border-white/10 bg-[#0F1014] p-6">
+          <p className="text-sm leading-6 text-[#949498]">
             Todavía no cargamos GPs recientes para este circuito.
           </p>
         </div>
       ) : (
-        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-4 xl:grid-cols-2">
           {weekends.map((weekend) => (
             <article
               key={weekend.id}
-              className="rounded-2xl border border-white/10 bg-black/20 p-4"
+              className="rounded-[8px] border border-white/10 bg-[#0F1014] p-4"
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
-                  {weekend.year}
-                </span>
+              <div className="flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <MetaChip>{weekend.year}</MetaChip>
+                    <MetaChip>{weekend.location}</MetaChip>
 
-                <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
-                  {weekend.location}
-                </span>
+                    {weekend.dateStart ? (
+                      <span className="font-mono text-[11px] text-[#949498]">
+                        {new Intl.DateTimeFormat("es-AR", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        }).format(new Date(weekend.dateStart))}
+                      </span>
+                    ) : null}
+                  </div>
 
-                {weekend.dateStart ? (
-                  <span className="text-xs text-zinc-500">
-                    {new Intl.DateTimeFormat("es-AR", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    }).format(new Date(weekend.dateStart))}
-                  </span>
-                ) : null}
+                  <h3 className="mt-3 font-['Rajdhani',sans-serif] text-xl font-semibold uppercase tracking-[0.02em] text-white">
+                    {weekend.meetingName}
+                  </h3>
+
+                  <p className="mt-1 text-sm text-[#949498]">
+                    {weekend.officialName ?? `${weekend.location}, ${weekend.country}`}
+                  </p>
+                </div>
               </div>
 
-              <h3 className="mt-3 text-base font-semibold text-white">
-                {weekend.meetingName}
-              </h3>
-
-              <p className="mt-1 text-sm text-zinc-400">
-                {weekend.officialName ?? `${weekend.location}, ${weekend.country}`}
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 grid gap-3">
                 {weekend.sessions.map((session) => (
-                  <SessionPill
+                  <div
                     key={session.id}
-                    circuitId={circuitId}
-                    session={session}
-                  />
+                    className="border-l-2 border-white/10 bg-white/[0.02] px-3 py-3 transition hover:border-[#E10600]/50 hover:bg-white/[0.04]"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <SessionTag circuitId={circuitId} session={session} />
+
+                      <span className="font-mono text-[11px] text-[#949498]">
+                        {session.date}
+                      </span>
+                    </div>
+
+                    {session.headline ? (
+                      <p className="mt-2 text-sm leading-6 text-white/80">
+                        {session.headline}
+                      </p>
+                    ) : null}
+                  </div>
                 ))}
               </div>
             </article>
           ))}
         </div>
       )}
-    </section>
+    </SectionCard>
   );
 }

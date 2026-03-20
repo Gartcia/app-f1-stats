@@ -1,3 +1,5 @@
+import { SectionCard } from "../ui/section-card";
+
 type Props = {
   country: string;
   location: string;
@@ -41,21 +43,15 @@ export function CircuitInfoGrid({
   ];
 
   return (
-    <section className="space-y-3">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
-          Datos del circuito
-        </p>
-        <h2 className="mt-2 text-lg font-semibold text-white">
-          Información base
-        </h2>
-      </div>
+    <SectionCard      eyebrow="Información del circuito"
+      title="Datos clave"
+      description="Información esencial sobre el circuito, incluyendo su ubicación, longitud, número de vueltas, año del primer Gran Premio y récord de vuelta.">
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
           <InfoCard key={item.label} label={item.label} value={item.value} />
         ))}
       </div>
-    </section>
+    </SectionCard>
   );
 }

@@ -1,4 +1,5 @@
 import type { CircuitSessionResult } from "@/types/circuit";
+import { SectionCard } from "../ui/section-card";
 
 type Props = {
   results?: CircuitSessionResult[];
@@ -39,16 +40,10 @@ function getPositionClasses(position: number) {
 
 export function SessionResultsTable({ results }: Props) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-zinc-950/60 p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">
-            Resultados
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-white">
-            Clasificación de la sesión
-          </h2>
-        </div>
+    <SectionCard      eyebrow="Resultados de la sesión"
+      title="Clasificación final"
+      description="Los resultados oficiales de la sesión, incluyendo posición, equipo, número de vueltas, gap o tiempo, y estado final de cada piloto.">
+      <div className="mb-4">
 
         <p className="text-sm text-zinc-500">
           {results?.length ? `${results.length} pilotos clasificados` : "Sin resultados"}
@@ -136,6 +131,6 @@ export function SessionResultsTable({ results }: Props) {
           </div>
         </div>
       )}
-    </section>
+    </SectionCard>
   );
 }

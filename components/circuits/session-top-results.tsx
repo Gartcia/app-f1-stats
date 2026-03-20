@@ -1,3 +1,5 @@
+import { SectionCard } from "../ui/section-card";
+
 type SessionTopResult = {
   position: number;
   driver: string;
@@ -13,17 +15,8 @@ type Props = {
 
 export function SessionTopResults({ results }: Props) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
-            Resultados
-          </p>
-          <h2 className="mt-2 text-lg font-semibold text-white">
-            Resultados destacados
-          </h2>
-        </div>
-      </div>
+    <SectionCard      eyebrow="Resultados destacados"
+      title="Top 5 de la sesión">
 
       {!results || results.length === 0 ? (
         <p className="mt-4 text-sm text-zinc-400">
@@ -64,6 +57,6 @@ export function SessionTopResults({ results }: Props) {
           </table>
         </div>
       )}
-    </section>
+    </SectionCard>
   );
 }

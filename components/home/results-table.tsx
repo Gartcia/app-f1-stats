@@ -27,30 +27,30 @@ function isPracticeSession(sessionType: SessionType) {
 
 function getPositionBadgeClass(position: number) {
   if (position === 1) {
-    return "border-yellow-500/20 bg-yellow-500/15 text-yellow-300";
+    return "border-yellow-500/30 bg-yellow-500/12 text-yellow-300";
   }
 
   if (position === 2) {
-    return "border-zinc-200/10 bg-zinc-200/10 text-zinc-200";
+    return "border-zinc-200/15 bg-zinc-200/8 text-zinc-200";
   }
 
   if (position === 3) {
-    return "border-amber-700/20 bg-amber-700/15 text-amber-300";
+    return "border-amber-700/30 bg-amber-700/12 text-amber-300";
   }
 
-  return "border-white/10 bg-white/5 text-zinc-300";
+  return "border-white/10 bg-white/[0.04] text-white/80";
 }
 
 function getDeltaClass(value: number) {
   if (value === -999 || value === 0) {
-    return "text-zinc-400";
+    return "text-[#949498]";
   }
 
   if (value > 0) {
-    return "text-emerald-400";
+    return "text-[#00D2BE]";
   }
 
-  return "text-red-400";
+  return "text-[#E10600]";
 }
 
 export function ResultsTable({ results, sessionType }: Props) {
@@ -60,23 +60,25 @@ export function ResultsTable({ results, sessionType }: Props) {
   const showTyres = sessionType === "race" || sessionType === "qualifying";
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+    <section className="rounded-[8px] border border-white/10 bg-[#15151E] p-6">
+      <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">
+          <p className="font-mono text-[11px] font-medium uppercase tracking-[0.24em] italic text-[#949498]">
             Clasificación
           </p>
-          <h2 className="mt-2 text-lg font-semibold text-white">Resultados</h2>
+          <h2 className="mt-2 font-['Rajdhani',sans-serif] text-3xl font-semibold uppercase tracking-[0.02em] text-white">
+            Resultados
+          </h2>
         </div>
 
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-[#949498]">
           Vista resumida de la sesión seleccionada
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20">
-        <table className="w-full min-w-[920px] text-left text-sm text-zinc-300">
-          <thead className="bg-white/5 text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+      <div className="overflow-x-auto rounded-[8px] border border-white/10 bg-[#0F1014]">
+        <table className="w-full min-w-[920px] text-left text-sm text-white/80">
+          <thead className="border-b border-white/10 bg-white/[0.03] font-mono text-[11px] uppercase tracking-[0.18em] text-[#949498]">
             <tr>
               <th className="px-4 py-3 font-medium">Pos</th>
               <th className="min-w-[160px] px-4 py-3 font-medium">Piloto</th>
@@ -105,11 +107,11 @@ export function ResultsTable({ results, sessionType }: Props) {
             {results.map((driver) => (
               <tr
                 key={`${driver.position}-${driver.driverName}`}
-                className="transition hover:bg-white/5"
+                className="transition hover:bg-white/[0.03]"
               >
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-flex min-w-9 items-center justify-center rounded-full border px-2 py-1 text-xs font-semibold ${getPositionBadgeClass(
+                    className={`inline-flex min-w-9 items-center justify-center rounded-[4px] border px-2 py-1 font-mono text-xs font-semibold ${getPositionBadgeClass(
                       driver.position
                     )}`}
                   >
@@ -121,17 +123,17 @@ export function ResultsTable({ results, sessionType }: Props) {
                   <div className="font-medium text-white">{driver.driverName}</div>
                 </td>
 
-                <td className="px-4 py-3 text-zinc-400">{driver.teamName}</td>
+                <td className="px-4 py-3 text-[#949498]">{driver.teamName}</td>
 
                 {showGrid && (
-                  <td className="px-4 py-3 text-zinc-300">
+                  <td className="px-4 py-3 font-mono text-white/85">
                     {formatStartPosition(driver.startPosition)}
                   </td>
                 )}
 
                 {showDelta && (
                   <td
-                    className={`px-4 py-3 font-medium ${getDeltaClass(
+                    className={`px-4 py-3 font-mono font-medium ${getDeltaClass(
                       driver.deltaPositions
                     )}`}
                   >
@@ -139,23 +141,28 @@ export function ResultsTable({ results, sessionType }: Props) {
                   </td>
                 )}
 
-                <td className="px-4 py-3 text-zinc-300">
+                <td className="px-4 py-3 font-mono text-white/85">
                   {driver.lapsCompleted}
                 </td>
 
                 {showPits && (
-                  <td className="px-4 py-3 text-zinc-300">{driver.pitStops}</td>
+                  <td className="px-4 py-3 font-mono text-white/85">
+                    {driver.pitStops}
+                  </td>
                 )}
 
                 {showTyres && (
-                  <td className="px-4 py-3 font-medium text-zinc-200">
+                  <td className="px-4 py-3 font-medium text-white/90">
                     {driver.tyres}
                   </td>
                 )}
 
-                <td className="px-4 py-3 text-zinc-400">{driver.topSpeed}</td>
-                <td className="px-4 py-3 font-medium text-zinc-200">
-                  {driver.status}
+                <td className="px-4 py-3 font-mono text-[#949498]">
+                  {driver.topSpeed}
+                </td>
+
+                <td className="px-4 py-3">
+                  <span className="font-medium text-white/90">{driver.status}</span>
                 </td>
               </tr>
             ))}
