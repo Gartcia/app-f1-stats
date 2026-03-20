@@ -369,14 +369,11 @@ export function mapOpenF1SessionNameToCircuitSessionType(
     return "Race";
   }
 
-  if (
-    sessionName === "Qualifying" ||
-    sessionName === "Sprint Qualifying"
-  ) {
+  if (sessionName === "Qualifying") {
     return "Qualifying";
   }
 
-  if (sessionName === "Sprint") {
+  if (sessionName === "Sprint" || sessionName === "Sprint Qualifying") {
     return "Sprint";
   }
 
@@ -462,11 +459,53 @@ export function findOpenF1SessionByCircuitSessionType(
   sessions: OpenF1Session[],
   sessionType: "Race" | "Qualifying" | "Sprint" | "FP1" | "FP2" | "FP3"
 ) {
-  return (
-    sessions.find(
-      (session) =>
-        mapOpenF1SessionNameToCircuitSessionType(session.session_name) ===
-        sessionType
-    ) ?? null
+  const orderedSessions = [...sessions].sort(
+    (a, b) => new Date(b.date_start).getTime() - new Date(a.date_start).getTime()
   );
+
+  if (sessionType === "Sprint") {
+    return (
+      orderedSessions.find((session) =>
+        ["Sprint", "Sprint Qualifying"].includes(session.session_name)
+      ) ?? null
+    );
+  }
+
+  if (sessionType === "Qualifying") {
+    return (
+      orderedSessions.find((session) => session.session_name === "Qualifying") ??
+      null
+    );
+  }
+
+  if (sessionType === "Race") {
+    return orderedSessions.find((session) => session.session_name === "Race") ?? null;
+  }
+
+  if (sessionType === "FP1") {
+    return (
+      orderedSessions.find((session) => session.session_name === "Practice 1") ??
+      null
+    );
+  }
+
+  if (sessionType === "FP2") {
+    return (
+      orderedSessions.find((session) => session.session_name === "Practice 2") ??
+      null
+    );
+  }
+
+  if (sessionType === "FP3") {
+    return (
+      orderedSessions.find((session) => session.session_name === "Practice 3") ??
+      null
+    );
+  }
+
+  return null;
+}
+
+export async function getMeetingsByYear(year: number) {
+  return fetchOpenF1<OpenF1Meeting[]>(`/meetings?year=${year}`);
 }

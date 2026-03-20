@@ -2,9 +2,9 @@ import type { HomeLatestResponse, SessionType } from "@/types/home";
 import {
   findOpenF1SessionByCircuitSessionType,
   getDrivers,
-  getLatestCompletedMeetingForCircuit,
   getLatestWeatherForSession,
   getMeetingByKey,
+  getMeetingsByYear,
   getPitStops,
   getSessionResults,
   getSessionsByMeetingKey,
@@ -12,7 +12,62 @@ import {
   getStints,
   parseCircuitSessionMockId,
 } from "@/lib/api/openf1";
-import { circuits } from "@/lib/data/circuits";
+import { circuitVisuals } from "@/lib/data/circuit-visuals";
+
+type OpenF1Meeting = Awaited<ReturnType<typeof getMeetingsByYear>>[number];
+
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function textMatchesAny(value: string, candidates?: string[]) {
+  if (!candidates || candidates.length === 0) {
+    return false;
+  }
+
+  const normalizedValue = normalizeText(value);
+
+  return candidates.some((candidate) => {
+    const normalizedCandidate = normalizeText(candidate);
+
+    return (
+      normalizedValue.includes(normalizedCandidate) ||
+      normalizedCandidate.includes(normalizedValue)
+    );
+  });
+}
+
+function resolveVisualById(circuitId: string) {
+  return circuitVisuals.find((item) => item.id === circuitId) ?? null;
+}
+
+function resolveMeetingForCircuitId(
+  meetings: OpenF1Meeting[],
+  circuitId: string
+) {
+  const visual = resolveVisualById(circuitId);
+
+  if (!visual) {
+    return null;
+  }
+
+  return (
+    meetings.find((meeting) => {
+      const values = [
+        meeting.meeting_name,
+        meeting.location,
+        meeting.country_name,
+        meeting.circuit_short_name,
+      ];
+
+      return values.some((value) => textMatchesAny(value, visual.aliases));
+    }) ?? null
+  );
+}
 
 function formatSessionDate(date: string) {
   return new Intl.DateTimeFormat("es-AR", {
@@ -186,7 +241,10 @@ function buildTyresByDriverNumber(
       return index === 0 || compounds[index - 1] !== compound;
     });
 
-    map.set(driverNumber, uniqueSequence.length > 0 ? uniqueSequence.join("-") : "-");
+    map.set(
+      driverNumber,
+      uniqueSequence.length > 0 ? uniqueSequence.join("-") : "-"
+    );
   }
 
   return map;
@@ -330,23 +388,27 @@ export async function getCircuitSessionData(
   circuitId: string,
   sessionId: string
 ): Promise<HomeLatestResponse> {
-  const circuit = circuits.find((item) => item.id === circuitId);
-
-  if (!circuit) {
-    throw new Error("Circuito no encontrado");
-  }
-
   const parsedSession = parseCircuitSessionMockId(sessionId);
 
-  if (!parsedSession || parsedSession.circuitId !== circuit.id) {
+  if (!parsedSession || parsedSession.circuitId !== circuitId) {
     throw new Error("sessionId inválido");
   }
 
-  const latestMeeting = await getLatestCompletedMeetingForCircuit({
-    id: circuit.id,
-    country: circuit.country,
-    location: circuit.location,
-  });
+  const currentYear = new Date().getUTCFullYear();
+
+  const [currentMeetings, previousMeetings] = await Promise.all([
+    getMeetingsByYear(currentYear),
+    getMeetingsByYear(currentYear - 1),
+  ]);
+
+  const completedMeetings = [...currentMeetings, ...previousMeetings]
+    .filter((meeting) => new Date(meeting.date_end).getTime() <= Date.now())
+    .sort(
+      (a, b) =>
+        new Date(b.date_end).getTime() - new Date(a.date_end).getTime()
+    );
+
+  const latestMeeting = resolveMeetingForCircuitId(completedMeetings, circuitId);
 
   if (!latestMeeting) {
     throw new Error("No se encontró un meeting para el circuito");
@@ -407,7 +469,8 @@ export async function getCircuitSessionData(
   return {
     summary: {
       grandPrixName: resolveGrandPrixName(meeting),
-      circuitName: meeting?.circuit_short_name ?? openF1Session.circuit_short_name,
+      circuitName:
+        meeting?.circuit_short_name ?? openF1Session.circuit_short_name,
       location: meeting
         ? `${meeting.location}, ${meeting.country_name}`
         : `${openF1Session.location}, ${openF1Session.country_name}`,

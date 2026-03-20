@@ -43,10 +43,10 @@ export default async function CircuitsPage() {
 
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
               <p className="text-[11px] uppercase tracking-wide text-zinc-500">
-                Vista
+                Cobertura
               </p>
               <p className="mt-2 text-base font-medium text-white">
-                Meeting reciente
+                Meetings recientes
               </p>
             </div>
 

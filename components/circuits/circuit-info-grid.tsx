@@ -1,10 +1,10 @@
 type Props = {
   country: string;
   location: string;
-  lengthKm: string;
-  laps: number;
-  firstGp: number;
-  lapRecord: string;
+  lengthKm?: string;
+  laps?: number;
+  firstGp?: number;
+  lapRecord?: string;
 };
 
 type InfoCardProps = {
@@ -31,6 +31,15 @@ export function CircuitInfoGrid({
   firstGp,
   lapRecord,
 }: Props) {
+  const items = [
+    { label: "País", value: country },
+    { label: "Ubicación", value: location },
+    ...(lengthKm ? [{ label: "Longitud", value: `${lengthKm} km` }] : []),
+    ...(typeof laps === "number" ? [{ label: "Vueltas", value: laps }] : []),
+    ...(typeof firstGp === "number" ? [{ label: "Primer GP", value: firstGp }] : []),
+    ...(lapRecord ? [{ label: "Récord de vuelta", value: lapRecord }] : []),
+  ];
+
   return (
     <section className="space-y-3">
       <div>
@@ -43,12 +52,9 @@ export function CircuitInfoGrid({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <InfoCard label="País" value={country} />
-        <InfoCard label="Ubicación" value={location} />
-        <InfoCard label="Longitud" value={`${lengthKm} km`} />
-        <InfoCard label="Vueltas" value={laps} />
-        <InfoCard label="Primer GP" value={firstGp} />
-        <InfoCard label="Récord de vuelta" value={lapRecord} />
+        {items.map((item) => (
+          <InfoCard key={item.label} label={item.label} value={item.value} />
+        ))}
       </div>
     </section>
   );

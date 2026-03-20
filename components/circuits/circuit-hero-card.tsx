@@ -2,12 +2,12 @@ type Props = {
   name: string;
   location: string;
   country: string;
-  type: string;
-  lengthKm: string;
-  laps: number;
+  type?: string;
+  lengthKm?: string;
+  laps?: number;
 };
 
-function getCircuitTypeClasses(type: string) {
+function getCircuitTypeClasses(type?: string) {
   switch (type) {
     case "Callejero":
       return "border-orange-500/20 bg-orange-500/10 text-orange-300";
@@ -42,21 +42,27 @@ export function CircuitHeroCard({
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span
-            className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${getCircuitTypeClasses(
-              type
-            )}`}
-          >
-            {type}
-          </span>
+          {type && (
+            <span
+              className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${getCircuitTypeClasses(
+                type
+              )}`}
+            >
+              {type}
+            </span>
+          )}
 
-          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-zinc-300">
-            {lengthKm} km
-          </span>
+          {lengthKm && (
+            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-zinc-300">
+              {lengthKm} km
+            </span>
+          )}
 
-          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-zinc-300">
-            {laps} vueltas
-          </span>
+          {typeof laps === "number" && (
+            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-zinc-300">
+              {laps} vueltas
+            </span>
+          )}
         </div>
       </div>
 
@@ -79,7 +85,9 @@ export function CircuitHeroCard({
           <p className="text-[11px] uppercase tracking-wide text-zinc-500">
             Tipo
           </p>
-          <p className="mt-2 text-base font-medium text-white">{type}</p>
+          <p className="mt-2 text-base font-medium text-white">
+            {type ?? "No disponible"}
+          </p>
         </div>
       </div>
     </section>

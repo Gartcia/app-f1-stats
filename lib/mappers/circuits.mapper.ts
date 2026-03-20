@@ -1,8 +1,8 @@
-import { getLatestCompletedMeeting, getSessionsByMeetingKey } from "@/lib/api/openf1";
+import { getMeetingsByYear } from "@/lib/api/openf1";
 import { circuitVisuals } from "@/lib/data/circuit-visuals";
 import type { CircuitListItem } from "@/types/circuit";
 
-type OpenF1MeetingLite = Awaited<ReturnType<typeof getLatestCompletedMeeting>>;
+type OpenF1Meeting = Awaited<ReturnType<typeof getMeetingsByYear>>[number];
 
 function normalizeText(value: string) {
   return value
@@ -12,7 +12,11 @@ function normalizeText(value: string) {
     .trim();
 }
 
-function resolveCircuitVisual(meeting: OpenF1MeetingLite) {
+function slugify(value: string) {
+  return normalizeText(value).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function resolveCircuitVisual(meeting: OpenF1Meeting) {
   const values = [
     meeting.meeting_name,
     meeting.location,
@@ -29,21 +33,63 @@ function resolveCircuitVisual(meeting: OpenF1MeetingLite) {
   );
 }
 
+function buildFallbackId(meeting: OpenF1Meeting) {
+  return slugify(meeting.circuit_short_name || meeting.location || meeting.meeting_name);
+}
+
+function buildDisplayName(meeting: OpenF1Meeting, visualName?: string) {
+  if (visualName) {
+    return visualName;
+  }
+
+  if (meeting.circuit_short_name?.trim()) {
+    return meeting.circuit_short_name;
+  }
+
+  return meeting.meeting_name;
+}
+
 export async function getCircuitsListData(): Promise<CircuitListItem[]> {
-  const latestMeeting = await getLatestCompletedMeeting();
-  const visual = resolveCircuitVisual(latestMeeting);
+  const currentYear = new Date().getUTCFullYear();
 
-  const single: CircuitListItem = {
-    id: visual?.id ?? normalizeText(latestMeeting.circuit_short_name).replace(/\s+/g, "-"),
-    name: visual?.name ?? latestMeeting.circuit_short_name,
-    country: latestMeeting.country_name,
-    location: latestMeeting.location,
-    type: visual?.type,
-    layoutLabel: visual?.layoutLabel,
-    layoutImage: visual?.layoutImage,
-    lastMeetingName: latestMeeting.meeting_name,
-    year: latestMeeting.year,
-  };
+  const [currentMeetings, previousMeetings] = await Promise.all([
+    getMeetingsByYear(currentYear),
+    getMeetingsByYear(currentYear - 1),
+  ]);
 
-  return [single];
+  const completedMeetings = [...currentMeetings, ...previousMeetings]
+    .filter((meeting) => new Date(meeting.date_end).getTime() <= Date.now())
+    .sort(
+      (a, b) =>
+        new Date(b.date_end).getTime() - new Date(a.date_end).getTime()
+    );
+
+  const latestByCircuit = new Map<string, OpenF1Meeting>();
+
+  for (const meeting of completedMeetings) {
+    const visual = resolveCircuitVisual(meeting);
+    const circuitId = visual?.id ?? buildFallbackId(meeting);
+
+    if (!latestByCircuit.has(circuitId)) {
+      latestByCircuit.set(circuitId, meeting);
+    }
+  }
+
+  return Array.from(latestByCircuit.entries())
+    .map(([circuitId, meeting]) => {
+      const visual = resolveCircuitVisual(meeting);
+
+      return {
+        id: circuitId,
+        name: buildDisplayName(meeting, visual?.name),
+        country: meeting.country_name,
+        location: meeting.location,
+        type: visual?.type,
+        layoutLabel: visual?.layoutLabel,
+        layoutImage: visual?.layoutImage,
+        lastMeetingName: meeting.meeting_name,
+        year: meeting.year,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
