@@ -451,7 +451,7 @@ export async function getCircuitSessionData(
 
   const allSessions = (
     await Promise.all(
-      candidateMeetings.slice(0, 3).map((meeting) =>
+      candidateMeetings.slice(0, 5).map((meeting) =>
         getSessionsByMeetingKey(meeting.meeting_key)
       )
     )

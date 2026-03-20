@@ -4,7 +4,7 @@ import {
   getMeetingByKey,
   getMeetingsByYear,
   getSessionsByMeetingKey,
-  getSessionResults,
+  getSessionResultsSafe,
   getSessionForMeeting,
 } from "@/lib/api/openf1";
 import { mapOpenF1SessionNameToCircuitSessionType } from "@/lib/api/openf1";
@@ -75,78 +75,15 @@ function normalizeText(value: string) {
     .trim();
 }
 
-function getAliases(value: string) {
-  const normalized = normalizeText(value);
-
-  const aliases: Record<string, string[]> = {
-    "albert park": ["albert park", "melbourne"],
-    melbourne: ["melbourne", "albert park"],
-    shanghai: ["shanghai", "jiading", "shanghai international circuit"],
-    jiading: ["jiading", "shanghai", "shanghai international circuit"],
-    suzuka: ["suzuka"],
-    sakhir: ["sakhir", "bahrain"],
-    bahrain: ["bahrain", "sakhir"],
-    jeddah: ["jeddah", "jeddah corniche"],
-    miami: ["miami", "miami gardens"],
-    imola: ["imola", "emilia-romagna", "autodromo enzo e dino ferrari"],
-    "emilia-romagna": ["emilia-romagna", "imola"],
-    monaco: ["monaco", "monte carlo"],
-    montmelo: ["montmelo", "barcelona", "catalunya"],
-    barcelona: ["barcelona", "montmelo", "catalunya"],
-    catalunya: ["catalunya", "barcelona", "montmelo"],
-    montreal: ["montreal", "gilles villeneuve"],
-    spielberg: ["spielberg", "red bull ring"],
-    "red bull ring": ["red bull ring", "spielberg"],
-    silverstone: ["silverstone"],
-    spa: ["spa", "spa-francorchamps"],
-    "spa-francorchamps": ["spa-francorchamps", "spa"],
-    budapest: ["budapest", "hungaroring"],
-    hungaroring: ["hungaroring", "budapest"],
-    zandvoort: ["zandvoort"],
-    monza: ["monza"],
-    baku: ["baku"],
-    "marina bay": ["marina bay", "singapore"],
-    singapore: ["singapore", "marina bay"],
-    austin: ["austin", "cota", "circuit of the americas"],
-    cota: ["cota", "austin", "circuit of the americas"],
-    "mexico city": ["mexico city", "mexico", "autodromo hermanos rodriguez"],
-    mexico: ["mexico", "mexico city", "autodromo hermanos rodriguez"],
-    "sao paulo": ["sao paulo", "interlagos"],
-    interlagos: ["interlagos", "sao paulo"],
-    "las vegas": ["las vegas"],
-    losail: ["losail", "qatar"],
-    qatar: ["qatar", "losail"],
-    "yas marina": ["yas marina", "abu dhabi"],
-    "abu dhabi": ["abu dhabi", "yas marina"],
-  };
-
-  return aliases[normalized] ?? [normalized];
-}
-
-function hasAliasMatch(a: string, b: string) {
-  const aliasesA = getAliases(a);
-  const aliasesB = getAliases(b);
-
-  return aliasesA.some((valueA) =>
-    aliasesB.some(
-      (valueB) => valueA.includes(valueB) || valueB.includes(valueA)
-    )
-  );
-}
-
-function textMatchesAny(value: string, candidates?: string[]) {
-  if (!candidates || candidates.length === 0) {
-    return false;
-  }
-
+function includesAlias(value: string, aliases: string[]) {
   const normalizedValue = normalizeText(value);
 
-  return candidates.some((candidate) => {
-    const normalizedCandidate = normalizeText(candidate);
+  return aliases.some((alias) => {
+    const normalizedAlias = normalizeText(alias);
 
     return (
-      normalizedValue.includes(normalizedCandidate) ||
-      normalizedCandidate.includes(normalizedValue)
+      normalizedValue.includes(normalizedAlias) ||
+      normalizedAlias.includes(normalizedValue)
     );
   });
 }
@@ -157,18 +94,36 @@ function resolveCircuitIdFromSession(params: {
   circuitShortName?: string;
   meetingName?: string;
 }) {
-  const values = [
-    params.countryName,
-    params.location,
-    params.circuitShortName ?? "",
-    params.meetingName ?? "",
-  ];
+  const location = normalizeText(params.location);
+  const circuitShortName = normalizeText(params.circuitShortName ?? "");
+  const meetingName = normalizeText(params.meetingName ?? "");
+  const countryName = normalizeText(params.countryName);
 
-  const match = circuitVisuals.find((visual) =>
-    values.some((value) => textMatchesAny(value, visual.aliases))
-  );
+  const scored = circuitVisuals
+    .map((visual) => {
+      const aliases = (visual.aliases ?? []).map(normalizeText);
 
-  return match?.id ?? null;
+      let score = 0;
+
+      if (location && includesAlias(location, aliases)) score += 5;
+      if (circuitShortName && includesAlias(circuitShortName, aliases)) score += 4;
+      if (meetingName && includesAlias(meetingName, aliases)) score += 3;
+      if (countryName && includesAlias(countryName, aliases)) score += 1;
+
+      return {
+        id: visual.id,
+        score,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const best = scored[0];
+
+  if (!best || best.score < 4) {
+    return null;
+  }
+
+  return best.id;
 }
 
 function formatShortDate(value: string) {
@@ -244,78 +199,89 @@ export async function getDriverRecentWeekends(
       (a, b) =>
         new Date(b.date_end).getTime() - new Date(a.date_end).getTime()
     )
-    .slice(0, 5);
+    .slice(0, 3);
 
-  const weekendPayloads: Array<DriverWeekend | null> = await Promise.all(
-  completedMeetings.map(async (meeting): Promise<DriverWeekend | null> => {
+  const weekends: DriverWeekend[] = [];
+
+  for (const meeting of completedMeetings) {
     const sessions = await getSessionsByMeetingKey(meeting.meeting_key);
+    const collectedSessions: DriverWeekendSession[] = [];
 
-    const sessionPayloads = await Promise.all(
-      sessions.map(async (session): Promise<DriverWeekendSession | null> => {
-        const mappedType = mapOpenF1SessionNameToCircuitSessionType(
-          session.session_name
+    for (const session of sessions) {
+      const mappedType = mapOpenF1SessionNameToCircuitSessionType(
+        session.session_name
+      );
+
+      if (!mappedType) {
+        continue;
+      }
+
+      let results;
+      try {
+        results = await getSessionResultsSafe(session.session_key);
+      } catch (error) {
+        console.warn(
+          `No se pudo obtener session_result para session_key=${session.session_key}`,
+          error
         );
+        continue;
+      }
 
-        if (!mappedType) {
-          return null;
-        }
+      const result = results.find((item) => item.driver_number === driverNumber);
 
-        const results = await getSessionResults(session.session_key);
-        const result = results.find((item) => item.driver_number === driverNumber);
+      if (!result) {
+        continue;
+      }
 
-        if (!result) {
-          return null;
-        }
-
-const circuitId = resolveCircuitIdFromSession({
-  countryName: session.country_name,
-  location: session.location,
-  circuitShortName: session.circuit_short_name,
-  meetingName: session.meeting_name,
+      const circuitId = resolveCircuitIdFromSession({
+  countryName: meeting.country_name,
+  location: meeting.location,
+  circuitShortName: meeting.circuit_short_name,
+  meetingName: meeting.meeting_name,
 });
 
-        return {
-          id: String(session.session_key),
-          sessionKey: session.session_key,
-          meetingKey: session.meeting_key,
-          sessionName: session.session_name,
-          sessionType: mappedType,
-          date: formatShortDate(session.date_start),
-          position: result.position ?? null,
-          lapsCompleted: result.number_of_laps,
-          gapToLeader: formatRecentSessionGap(result.gap_to_leader),
-          status: formatStatus({
-            position: result.position,
-            dnf: result.dnf,
-            dns: result.dns,
-            dsq: result.dsq,
-          }),
-          circuitId: circuitId ?? undefined,
-        };
-      })
-    );
-
-    const validSessions = sessionPayloads
-      .filter((session): session is DriverWeekendSession => session !== null)
-      .sort((a, b) => {
-        const order: Record<CircuitSessionType, number> = {
-          Race: 0,
-          Qualifying: 1,
-          Sprint: 2,
-          "Sprint Shootout": 3,
-          FP3: 4,
-          FP2: 5,
-          FP1: 6,
-        };
-
-        return (order[a.sessionType] ?? 999) - (order[b.sessionType] ?? 999);
+      collectedSessions.push({
+        id: String(session.session_key),
+        sessionKey: session.session_key,
+        meetingKey: session.meeting_key,
+        sessionName: session.session_name,
+        sessionType: mappedType,
+        date: formatShortDate(session.date_start),
+        position: result.position ?? null,
+        lapsCompleted: result.number_of_laps,
+        gapToLeader: formatRecentSessionGap(result.gap_to_leader),
+        status: formatStatus({
+          position: result.position,
+          dnf: result.dnf,
+          dns: result.dns,
+          dsq: result.dsq,
+        }),
+        circuitId: circuitId ?? undefined,
       });
-
-    if (validSessions.length === 0) {
-      return null;
     }
 
-    return {
+    const order: Record<CircuitSessionType, number> = {
+      Race: 0,
+      Qualifying: 1,
+      Sprint: 2,
+      "Sprint Shootout": 3,
+      FP3: 4,
+      FP2: 5,
+      FP1: 6,
+    };
+
+    const validSessions = collectedSessions.sort(
+      (a, b) => (order[a.sessionType] ?? 999) - (order[b.sessionType] ?? 999)
+    );
+
+    if (validSessions.length === 0) {
+      continue;
+    }
+
+    const weekendCircuitId =
+      validSessions.find((session) => session.circuitId)?.circuitId;
+
+    weekends.push({
       id: String(meeting.meeting_key),
       meetingKey: meeting.meeting_key,
       year: meeting.year,
@@ -323,16 +289,13 @@ const circuitId = resolveCircuitIdFromSession({
       location: meeting.location,
       country: meeting.country_name,
       circuitName: meeting.circuit_short_name,
-      circuitId: validSessions[0]?.circuitId,
+      circuitId: weekendCircuitId,
       dateStart: meeting.date_start,
       sessions: validSessions,
-    };
-  })
-);
+    });
+  }
 
-return weekendPayloads.filter(
-  (weekend): weekend is DriverWeekend => weekend !== null
-);
+  return weekends;
 }
 
 export async function getDriversListData(): Promise<DriverListItem[]> {
@@ -369,7 +332,7 @@ export async function getDriverDetailData(
 
   const [drivers, results, meeting] = await Promise.all([
     getDrivers(preferredSession.session_key),
-    getSessionResults(preferredSession.session_key),
+    getSessionResultsSafe(preferredSession.session_key),
     getMeetingByKey(latestMeeting.meeting_key),
   ]);
 

@@ -145,7 +145,7 @@ export default async function SessionDetailPage({
     notFound();
   }
 
-  const meetingsToSearch = circuitMeetings.slice(0, 3);
+  const meetingsToSearch = circuitMeetings.slice(0, 5);
 
   const sessionsByMeeting = await Promise.all(
     meetingsToSearch.map((meeting) => getSessionsByMeetingKey(meeting.meeting_key))

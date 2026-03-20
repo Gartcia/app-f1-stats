@@ -1,6 +1,8 @@
 import { CircuitSessionType } from "@/types/circuit";
+import { cache } from "react";
 
 const OPENF1_BASE_URL = "https://api.openf1.org/v1";
+
 
 export type OpenF1Session = {
   session_key: number;
@@ -103,16 +105,57 @@ export class SessionNotAvailableError extends Error {
   }
 }
 
-async function fetchOpenF1<T>(path: string): Promise<T> {
-  const response = await fetch(`${OPENF1_BASE_URL}${path}`, {
-    next: { revalidate: 3600 },
-  });
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  if (!response.ok) {
-    throw new Error(`OpenF1 error: ${response.status}`);
+async function fetchOpenF1<T>(path: string): Promise<T> {
+  const url = `${OPENF1_BASE_URL}${path}`;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        next: { revalidate: 3600 },
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        return response.json();
+      }
+
+      if (response.status === 429 || response.status >= 500) {
+        lastError = new Error(`OpenF1 error: ${response.status}`);
+
+        if (attempt < 2) {
+          await sleep(500 * (attempt + 1));
+          continue;
+        }
+      }
+
+      throw new Error(`OpenF1 error: ${response.status}`);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      lastError = error;
+
+      if (attempt < 2) {
+        await sleep(500 * (attempt + 1));
+        continue;
+      }
+    }
   }
 
-  return response.json();
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("OpenF1 request failed");
 }
 
 function getSessionNamesByType(
@@ -173,17 +216,27 @@ export async function getLatestCompletedMeeting(): Promise<OpenF1Meeting> {
   return completedPreviousYearMeetings[0];
 }
 
-export async function getMeetingByKey(meetingKey: number) {
+export const getMeetingsByYear = cache(async function getMeetingsByYear(
+  year: number
+) {
+  return fetchOpenF1<OpenF1Meeting[]>(`/meetings?year=${year}`);
+});
+
+export const getMeetingByKey = cache(async function getMeetingByKey(
+  meetingKey: number
+) {
   const meetings = await fetchOpenF1<OpenF1Meeting[]>(
     `/meetings?meeting_key=${meetingKey}`
   );
 
   return meetings[0] ?? null;
-}
+});
 
-export async function getSessionsByMeetingKey(meetingKey: number) {
+export const getSessionsByMeetingKey = cache(async function getSessionsByMeetingKey(
+  meetingKey: number
+) {
   return fetchOpenF1<OpenF1Session[]>(`/sessions?meeting_key=${meetingKey}`);
-}
+});
 
 export async function getSessionForMeeting(
   meetingKey: number,
@@ -227,6 +280,17 @@ export async function getSessionResults(sessionKey: number) {
   return fetchOpenF1<OpenF1SessionResult[]>(
     `/session_result?session_key=${sessionKey}`
   );
+}
+export async function getSessionResultsSafe(sessionKey: number) {
+  try {
+    return await getSessionResults(sessionKey);
+  } catch (error) {
+    console.warn(
+      `No se pudo obtener session_result para session_key=${sessionKey}`,
+      error
+    );
+    return [];
+  }
 }
 
 export async function getDrivers(sessionKey: number) {
@@ -381,23 +445,6 @@ export function mapOpenF1SessionNameToCircuitSessionType(
   return null;
 }
 
-export function buildCircuitSessionMockId(
-  circuitId: string,
-  year: number,
-  sessionType: "Race" | "Qualifying" | "Sprint" | "FP1" | "FP2" | "FP3"
-) {
-  const typeMap: Record<typeof sessionType, string> = {
-    Race: "race",
-    Qualifying: "qualifying",
-    Sprint: "sprint",
-    FP1: "fp1",
-    FP2: "fp2",
-    FP3: "fp3",
-  };
-
-  return `${year}-${typeMap[sessionType]}-${circuitId}`;
-}
-
 export function pickPreferredSession(sessions: OpenF1Session[]) {
   const SESSION_PRIORITY = [
     "Race",
@@ -415,86 +462,4 @@ export function pickPreferredSession(sessions: OpenF1Session[]) {
   }
 
   return null;
-}
-
-export function parseCircuitSessionMockId(sessionId: string) {
-  const match = sessionId.match(
-    /^(\d{4})-(race|qualifying|sprint|fp1|fp2|fp3)-(.+)$/
-  );
-
-  if (!match) {
-    return null;
-  }
-
-  const [, year, rawType, circuitId] = match;
-
-  const sessionTypeMap = {
-    race: "Race",
-    qualifying: "Qualifying",
-    sprint: "Sprint",
-    fp1: "FP1",
-    fp2: "FP2",
-    fp3: "FP3",
-  } as const;
-
-  return {
-    year: Number(year),
-    circuitId,
-    sessionType: sessionTypeMap[rawType as keyof typeof sessionTypeMap],
-  };
-}
-
-export function findOpenF1SessionByCircuitSessionType(
-  sessions: OpenF1Session[],
-  sessionType: "Race" | "Qualifying" | "Sprint" | "FP1" | "FP2" | "FP3"
-) {
-  const orderedSessions = [...sessions].sort(
-    (a, b) => new Date(b.date_start).getTime() - new Date(a.date_start).getTime()
-  );
-  if (sessionType === "Qualifying") {
-    return (
-      orderedSessions.find((session) => session.session_name === "Qualifying") ??
-      null
-    );
-  }
-  if (sessionType === "Sprint") {
-    return (
-      orderedSessions.find((session) =>
-        ["Sprint", "Sprint Qualifying"].includes(session.session_name)
-      ) ?? null
-    );
-  }
-
-  
-
-  if (sessionType === "Race") {
-    return orderedSessions.find((session) => session.session_name === "Race") ?? null;
-  }
-
-  if (sessionType === "FP1") {
-    return (
-      orderedSessions.find((session) => session.session_name === "Practice 1") ??
-      null
-    );
-  }
-
-  if (sessionType === "FP2") {
-    return (
-      orderedSessions.find((session) => session.session_name === "Practice 2") ??
-      null
-    );
-  }
-
-  if (sessionType === "FP3") {
-    return (
-      orderedSessions.find((session) => session.session_name === "Practice 3") ??
-      null
-    );
-  }
-
-  return null;
-}
-
-export async function getMeetingsByYear(year: number) {
-  return fetchOpenF1<OpenF1Meeting[]>(`/meetings?year=${year}`);
 }
