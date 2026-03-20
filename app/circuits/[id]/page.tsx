@@ -83,9 +83,9 @@ export default async function CircuitDetailPage({
         <CircuitDriversGrid drivers={circuit.drivers} />
 
         <CircuitRecentSessions
-          circuitId={circuit.id}
-          sessions={circuit.recentSessions}
-        />
+  circuitId={circuit.id}
+  weekends={circuit.recentWeekends}
+/>
       </div>
     </AppShell>
   );

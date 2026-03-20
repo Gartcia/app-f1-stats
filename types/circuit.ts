@@ -4,6 +4,7 @@ export type CircuitSessionType =
   | "Race"
   | "Qualifying"
   | "Sprint"
+  | "Sprint Shootout"
   | "FP1"
   | "FP2"
   | "FP3";
@@ -24,16 +25,38 @@ export type CircuitSessionQuickStats = {
   topSpeed?: string;
 };
 
-export type CircuitRecentSession = {
+export type CircuitWeekendSession = {
   id: string;
+  sessionKey: number;
+  meetingKey: number;
   year: number;
-  sessionType: CircuitSessionType;
+  sessionType:
+    | "Race"
+    | "Qualifying"
+    | "Sprint"
+    | "Sprint Shootout"
+    | "FP1"
+    | "FP2"
+    | "FP3";
+  sessionName: string;
   date: string;
   headline: string;
   status?: "Completed" | "Latest" | "Archived";
-  quickStats?: CircuitSessionQuickStats;
-  results?: CircuitSessionResult[];
   isAvailable?: boolean;
+};
+
+export type CircuitWeekend = {
+  id: string; // String(meeting_key)
+  meetingKey: number;
+  year: number;
+  meetingName: string;
+  officialName?: string;
+  location: string;
+  country: string;
+  circuitShortName?: string;
+  dateStart?: string;
+  dateEnd?: string;
+  sessions: CircuitWeekendSession[];
 };
 
 export type CircuitListItem = {
@@ -60,5 +83,5 @@ export type Circuit = {
   lapRecord: string;
   layoutLabel: string;
   layoutImage?: string;
-  recentSessions?: CircuitRecentSession[];
+  recentWeekends?: CircuitWeekend[];
 };

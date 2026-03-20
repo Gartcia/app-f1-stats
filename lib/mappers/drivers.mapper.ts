@@ -2,28 +2,40 @@ import {
   getDrivers,
   getLatestCompletedMeeting,
   getMeetingByKey,
+  getMeetingsByYear,
   getSessionsByMeetingKey,
   getSessionResults,
   getSessionForMeeting,
 } from "@/lib/api/openf1";
-import {
-  buildCircuitSessionMockId,
-  mapOpenF1SessionNameToCircuitSessionType,
-} from "@/lib/api/openf1";
-import { circuits } from "@/lib/data/circuits";
+import { mapOpenF1SessionNameToCircuitSessionType } from "@/lib/api/openf1";
+import { circuitVisuals } from "@/lib/data/circuit-visuals";
+import type { CircuitSessionType } from "@/types/circuit";
 
-export type DriverSessionResult = {
+export type DriverWeekendSession = {
+  id: string;
   sessionKey: number;
-  meetingName: string;
-  circuitName: string;
-  circuitId?: string;
-  sessionId?: string;
+  meetingKey: number;
   sessionName: string;
+  sessionType: CircuitSessionType;
   date: string;
   position: number | null;
   lapsCompleted: number;
   gapToLeader: string;
   status: string;
+  circuitId?: string;
+};
+
+export type DriverWeekend = {
+  id: string;
+  meetingKey: number;
+  year: number;
+  meetingName: string;
+  location: string;
+  country: string;
+  circuitName: string;
+  circuitId?: string;
+  dateStart: string;
+  sessions: DriverWeekendSession[];
 };
 
 export type DriverListItem = {
@@ -55,28 +67,6 @@ export type DriverDetail = {
   circuitName: string;
 };
 
-
-function getLocationAliases(value: string) {
-  const normalized = normalizeText(value);
-
-  const aliases: Record<string, string[]> = {
-    shanghai: ["shanghai", "jiading"],
-    jiading: ["jiading", "shanghai"],
-    "sao paulo": ["sao paulo", "interlagos"],
-    interlagos: ["interlagos", "sao paulo"],
-    spielberg: ["spielberg", "red bull ring"],
-    "red bull ring": ["red bull ring", "spielberg"],
-    imola: ["imola", "emilia-romagna"],
-    "emilia-romagna": ["emilia-romagna", "imola"],
-    sakhir: ["sakhir", "bahrain"],
-    bahrain: ["bahrain", "sakhir"],
-    montmelo: ["montmelo", "barcelona"],
-    barcelona: ["barcelona", "montmelo"],
-  };
-
-  return aliases[normalized] ?? [normalized];
-}
-
 function normalizeText(value: string) {
   return value
     .normalize("NFD")
@@ -90,56 +80,42 @@ function getAliases(value: string) {
 
   const aliases: Record<string, string[]> = {
     "albert park": ["albert park", "melbourne"],
-    "melbourne": ["melbourne", "albert park"],
-
-    "shanghai": ["shanghai", "jiading", "shanghai international circuit"],
-    "jiading": ["jiading", "shanghai", "shanghai international circuit"],
-
-    "suzuka": ["suzuka"],
-    "sakhir": ["sakhir", "bahrain"],
-    "bahrain": ["bahrain", "sakhir"],
-
-    "jeddah": ["jeddah", "jeddah corniche"],
-    "miami": ["miami", "miami gardens"],
-    "imola": ["imola", "emilia-romagna", "autodromo enzo e dino ferrari"],
+    melbourne: ["melbourne", "albert park"],
+    shanghai: ["shanghai", "jiading", "shanghai international circuit"],
+    jiading: ["jiading", "shanghai", "shanghai international circuit"],
+    suzuka: ["suzuka"],
+    sakhir: ["sakhir", "bahrain"],
+    bahrain: ["bahrain", "sakhir"],
+    jeddah: ["jeddah", "jeddah corniche"],
+    miami: ["miami", "miami gardens"],
+    imola: ["imola", "emilia-romagna", "autodromo enzo e dino ferrari"],
     "emilia-romagna": ["emilia-romagna", "imola"],
-
-    "monaco": ["monaco", "monte carlo"],
-    "montmelo": ["montmelo", "barcelona", "catalunya"],
-    "barcelona": ["barcelona", "montmelo", "catalunya"],
-    "catalunya": ["catalunya", "barcelona", "montmelo"],
-
-    "montreal": ["montreal", "gilles villeneuve"],
-    "spielberg": ["spielberg", "red bull ring"],
+    monaco: ["monaco", "monte carlo"],
+    montmelo: ["montmelo", "barcelona", "catalunya"],
+    barcelona: ["barcelona", "montmelo", "catalunya"],
+    catalunya: ["catalunya", "barcelona", "montmelo"],
+    montreal: ["montreal", "gilles villeneuve"],
+    spielberg: ["spielberg", "red bull ring"],
     "red bull ring": ["red bull ring", "spielberg"],
-
-    "silverstone": ["silverstone"],
-    "spa": ["spa", "spa-francorchamps"],
+    silverstone: ["silverstone"],
+    spa: ["spa", "spa-francorchamps"],
     "spa-francorchamps": ["spa-francorchamps", "spa"],
-
-    "budapest": ["budapest", "hungaroring"],
-    "hungaroring": ["hungaroring", "budapest"],
-
-    "zandvoort": ["zandvoort"],
-    "monza": ["monza"],
-    "baku": ["baku"],
-
+    budapest: ["budapest", "hungaroring"],
+    hungaroring: ["hungaroring", "budapest"],
+    zandvoort: ["zandvoort"],
+    monza: ["monza"],
+    baku: ["baku"],
     "marina bay": ["marina bay", "singapore"],
-    "singapore": ["singapore", "marina bay"],
-
-    "austin": ["austin", "cota", "circuit of the americas"],
-    "cota": ["cota", "austin", "circuit of the americas"],
-
+    singapore: ["singapore", "marina bay"],
+    austin: ["austin", "cota", "circuit of the americas"],
+    cota: ["cota", "austin", "circuit of the americas"],
     "mexico city": ["mexico city", "mexico", "autodromo hermanos rodriguez"],
-    "mexico": ["mexico", "mexico city", "autodromo hermanos rodriguez"],
-
+    mexico: ["mexico", "mexico city", "autodromo hermanos rodriguez"],
     "sao paulo": ["sao paulo", "interlagos"],
-    "interlagos": ["interlagos", "sao paulo"],
-
+    interlagos: ["interlagos", "sao paulo"],
     "las vegas": ["las vegas"],
-    "losail": ["losail", "qatar"],
-    "qatar": ["qatar", "losail"],
-
+    losail: ["losail", "qatar"],
+    qatar: ["qatar", "losail"],
     "yas marina": ["yas marina", "abu dhabi"],
     "abu dhabi": ["abu dhabi", "yas marina"],
   };
@@ -158,31 +134,39 @@ function hasAliasMatch(a: string, b: string) {
   );
 }
 
+function textMatchesAny(value: string, candidates?: string[]) {
+  if (!candidates || candidates.length === 0) {
+    return false;
+  }
+
+  const normalizedValue = normalizeText(value);
+
+  return candidates.some((candidate) => {
+    const normalizedCandidate = normalizeText(candidate);
+
+    return (
+      normalizedValue.includes(normalizedCandidate) ||
+      normalizedCandidate.includes(normalizedValue)
+    );
+  });
+}
+
 function resolveCircuitIdFromSession(params: {
   countryName: string;
   location: string;
   circuitShortName?: string;
+  meetingName?: string;
 }) {
-  const sessionCountry = normalizeText(params.countryName);
-  const sessionLocation = normalizeText(params.location);
-  const sessionShortName = normalizeText(params.circuitShortName ?? "");
+  const values = [
+    params.countryName,
+    params.location,
+    params.circuitShortName ?? "",
+    params.meetingName ?? "",
+  ];
 
-  const match = circuits.find((circuit) => {
-    const circuitCountry = normalizeText(circuit.country);
-    const circuitLocation = normalizeText(circuit.location);
-    const circuitId = normalizeText(circuit.id);
-
-    if (circuitCountry !== sessionCountry) {
-      return false;
-    }
-
-    return (
-      hasAliasMatch(sessionLocation, circuitLocation) ||
-      hasAliasMatch(sessionLocation, circuitId) ||
-      hasAliasMatch(sessionShortName, circuitLocation) ||
-      hasAliasMatch(sessionShortName, circuitId)
-    );
-  });
+  const match = circuitVisuals.find((visual) =>
+    values.some((value) => textMatchesAny(value, visual.aliases))
+  );
 
   return match?.id ?? null;
 }
@@ -196,9 +180,7 @@ function formatShortDate(value: string) {
 }
 
 function formatGapToLeader(value: unknown) {
-  if (value == null) {
-    return "-";
-  }
+  if (value == null) return "-";
 
   if (typeof value === "number") {
     return `+${value.toFixed(3)}s`;
@@ -213,9 +195,7 @@ function formatGapToLeader(value: unknown) {
 }
 
 function formatRecentSessionGap(value: unknown) {
-  if (value == null) {
-    return "-";
-  }
+  if (value == null) return "-";
 
   if (typeof value === "number") {
     return `+${value.toFixed(3)}s`;
@@ -224,22 +204,12 @@ function formatRecentSessionGap(value: unknown) {
   if (typeof value === "string") {
     const trimmed = value.trim();
 
-    if (!trimmed) {
-      return "-";
-    }
-
-    if (/^\+?\d+(\.\d+)?s$/.test(trimmed)) {
-      return trimmed;
-    }
-
+    if (!trimmed) return "-";
+    if (/^\+?\d+(\.\d+)?s$/.test(trimmed)) return trimmed;
     if (/^\d+(\.\d+)?$/.test(trimmed)) {
       return `+${Number(trimmed).toFixed(3)}s`;
     }
 
-    return "-";
-  }
-
-  if (Array.isArray(value)) {
     return "-";
   }
 
@@ -255,23 +225,41 @@ function formatStatus(params: {
   if (params.dsq) return "DSQ";
   if (params.dns) return "DNS";
   if (params.dnf) return "DNF";
-  if (params.position === 1) return "Finished";
   return "Finished";
 }
 
-export async function getDriverRecentSessions(
+export async function getDriverRecentWeekends(
   driverNumber: number
-): Promise<DriverSessionResult[]> {
-  const latestMeeting = await getLatestCompletedMeeting();
-  const sessions = await getSessionsByMeetingKey(latestMeeting.meeting_key);
+): Promise<DriverWeekend[]> {
+  const currentYear = new Date().getUTCFullYear();
 
-  const sortedSessions = [...sessions].sort(
-    (a, b) => new Date(b.date_start).getTime() - new Date(a.date_start).getTime()
-  );
+  const [currentMeetings, previousMeetings] = await Promise.all([
+    getMeetingsByYear(currentYear),
+    getMeetingsByYear(currentYear - 1),
+  ]);
 
-  const sessionPayloads = await Promise.all(
-    sortedSessions.map(
-      async (session): Promise<DriverSessionResult | null> => {
+  const completedMeetings = [...currentMeetings, ...previousMeetings]
+    .filter((meeting) => new Date(meeting.date_end).getTime() <= Date.now())
+    .sort(
+      (a, b) =>
+        new Date(b.date_end).getTime() - new Date(a.date_end).getTime()
+    )
+    .slice(0, 5);
+
+  const weekendPayloads: Array<DriverWeekend | null> = await Promise.all(
+  completedMeetings.map(async (meeting): Promise<DriverWeekend | null> => {
+    const sessions = await getSessionsByMeetingKey(meeting.meeting_key);
+
+    const sessionPayloads = await Promise.all(
+      sessions.map(async (session): Promise<DriverWeekendSession | null> => {
+        const mappedType = mapOpenF1SessionNameToCircuitSessionType(
+          session.session_name
+        );
+
+        if (!mappedType) {
+          return null;
+        }
+
         const results = await getSessionResults(session.session_key);
         const result = results.find((item) => item.driver_number === driverNumber);
 
@@ -279,30 +267,19 @@ export async function getDriverRecentSessions(
           return null;
         }
 
-        const mappedType = mapOpenF1SessionNameToCircuitSessionType(
-          session.session_name
-        );
-
-        const circuitId = mappedType
-          ? resolveCircuitIdFromSession({
-              countryName: session.country_name,
-              location: session.location,
-              circuitShortName: session.circuit_short_name,
-            })
-          : null;
-
-        const sessionId =
-          circuitId && mappedType
-            ? buildCircuitSessionMockId(circuitId, session.year, mappedType)
-            : undefined;
+const circuitId = resolveCircuitIdFromSession({
+  countryName: session.country_name,
+  location: session.location,
+  circuitShortName: session.circuit_short_name,
+  meetingName: session.meeting_name,
+});
 
         return {
+          id: String(session.session_key),
           sessionKey: session.session_key,
-          meetingName: session.meeting_name ?? latestMeeting.meeting_name,
-          circuitName: session.circuit_short_name,
-          circuitId: circuitId ?? undefined,
-          sessionId,
+          meetingKey: session.meeting_key,
           sessionName: session.session_name,
+          sessionType: mappedType,
           date: formatShortDate(session.date_start),
           position: result.position ?? null,
           lapsCompleted: result.number_of_laps,
@@ -313,14 +290,49 @@ export async function getDriverRecentSessions(
             dns: result.dns,
             dsq: result.dsq,
           }),
+          circuitId: circuitId ?? undefined,
         };
-      }
-    )
-  );
+      })
+    );
 
-  return sessionPayloads.filter(
-    (session): session is DriverSessionResult => session !== null
-  );
+    const validSessions = sessionPayloads
+      .filter((session): session is DriverWeekendSession => session !== null)
+      .sort((a, b) => {
+        const order: Record<CircuitSessionType, number> = {
+          Race: 0,
+          Qualifying: 1,
+          Sprint: 2,
+          "Sprint Shootout": 3,
+          FP3: 4,
+          FP2: 5,
+          FP1: 6,
+        };
+
+        return (order[a.sessionType] ?? 999) - (order[b.sessionType] ?? 999);
+      });
+
+    if (validSessions.length === 0) {
+      return null;
+    }
+
+    return {
+      id: String(meeting.meeting_key),
+      meetingKey: meeting.meeting_key,
+      year: meeting.year,
+      meetingName: meeting.meeting_name,
+      location: meeting.location,
+      country: meeting.country_name,
+      circuitName: meeting.circuit_short_name,
+      circuitId: validSessions[0]?.circuitId,
+      dateStart: meeting.date_start,
+      sessions: validSessions,
+    };
+  })
+);
+
+return weekendPayloads.filter(
+  (weekend): weekend is DriverWeekend => weekend !== null
+);
 }
 
 export async function getDriversListData(): Promise<DriverListItem[]> {

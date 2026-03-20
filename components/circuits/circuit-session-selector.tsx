@@ -1,20 +1,21 @@
 import Link from "next/link";
-import type { CircuitRecentSession } from "@/types/circuit";
+import type { CircuitWeekendSession } from "@/types/circuit";
 
 type Props = {
   circuitId: string;
   currentSessionId: string;
-  sessions: CircuitRecentSession[];
+  sessions: CircuitWeekendSession[];
 };
 
-const SESSION_ORDER = {
+const SESSION_ORDER: Record<CircuitWeekendSession["sessionType"], number> = {
   Race: 0,
   Qualifying: 1,
   Sprint: 2,
-  FP1: 3,
-  FP2: 4,
-  FP3: 5,
-} as const;
+  "Sprint Shootout": 3,
+  FP3: 4,
+  FP2: 5,
+  FP1: 6,
+};
 
 export function CircuitSessionSelector({
   circuitId,
@@ -22,7 +23,9 @@ export function CircuitSessionSelector({
   sessions,
 }: Props) {
   const availableSessions = [...sessions].sort(
-    (a, b) => SESSION_ORDER[a.sessionType] - SESSION_ORDER[b.sessionType]
+    (a, b) =>
+      (SESSION_ORDER[a.sessionType] ?? 999) -
+      (SESSION_ORDER[b.sessionType] ?? 999)
   );
 
   if (availableSessions.length === 0) {
@@ -37,12 +40,13 @@ export function CircuitSessionSelector({
 
       <div className="flex flex-wrap gap-2">
         {availableSessions.map((session) => {
-          const isActive = session.id === currentSessionId;
+          const targetSessionId = String(session.sessionKey);
+          const isActive = targetSessionId === currentSessionId;
 
           return (
             <Link
               key={session.id}
-              href={`/circuits/${circuitId}/sessions/${session.id}`}
+              href={`/circuits/${circuitId}/sessions/${targetSessionId}`}
               className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                 isActive
                   ? "bg-red-600 text-white"

@@ -6,15 +6,13 @@ import { QuickStats } from "@/components/home/quick-stats";
 import { ResultsTable } from "@/components/home/results-table";
 import { SessionSummary } from "@/components/home/session-summary";
 import {
-  buildCircuitSessionMockId,
   getMeetingsByYear,
   getSessionsByMeetingKey,
   mapOpenF1SessionNameToCircuitSessionType,
-  parseCircuitSessionMockId,
 } from "@/lib/api/openf1";
 import { circuitVisuals } from "@/lib/data/circuit-visuals";
 import { getCircuitSessionData } from "@/lib/mappers/circuit-session.mapper";
-import type { CircuitRecentSession } from "@/types/circuit";
+import type { CircuitWeekendSession } from "@/types/circuit";
 import type { SessionType } from "@/types/home";
 
 type SessionDetailPageProps = {
@@ -51,34 +49,41 @@ function textMatchesAny(value: string, candidates?: string[]) {
   });
 }
 
-function resolveMeetingForCircuitId(
+function resolveMeetingsForCircuitId(
   meetings: OpenF1Meeting[],
   circuitId: string
 ) {
   const visual = circuitVisuals.find((item) => item.id === circuitId);
 
   if (!visual) {
-    return null;
+    return [];
   }
 
-  return (
-    meetings.find((meeting) => {
-      const values = [
-        meeting.meeting_name,
-        meeting.location,
-        meeting.country_name,
-        meeting.circuit_short_name,
-      ];
+  return meetings.filter((meeting) => {
+    const values = [
+      meeting.meeting_name,
+      meeting.location,
+      meeting.country_name,
+      meeting.circuit_short_name,
+    ];
 
-      return values.some((value) => textMatchesAny(value, visual.aliases));
-    }) ?? null
-  );
+    return values.some((value) => textMatchesAny(value, visual.aliases));
+  });
 }
 
 function mapCircuitSessionToHomeType(
-  sessionType: "Race" | "Qualifying" | "Sprint" | "FP1" | "FP2" | "FP3"
+  sessionType:
+    | "Race"
+    | "Qualifying"
+    | "Sprint"
+    | "Sprint Shootout"
+    | "FP1"
+    | "FP2"
+    | "FP3"
 ): SessionType {
-  if (sessionType === "Qualifying") return "qualifying";
+  if (sessionType === "Qualifying" || sessionType === "Sprint Shootout") {
+    return "qualifying";
+  }
   if (sessionType === "FP1") return "fp1";
   if (sessionType === "FP2") return "fp2";
   if (sessionType === "FP3") return "fp3";
@@ -93,6 +98,16 @@ function formatSessionDate(value: string) {
   }).format(new Date(value));
 }
 
+const SESSION_ORDER: Record<CircuitWeekendSession["sessionType"], number> = {
+  Race: 0,
+  Qualifying: 1,
+  Sprint: 2,
+  "Sprint Shootout": 3,
+  FP3: 4,
+  FP2: 5,
+  FP1: 6,
+};
+
 export default async function SessionDetailPage({
   params,
 }: SessionDetailPageProps) {
@@ -104,9 +119,9 @@ export default async function SessionDetailPage({
     notFound();
   }
 
-  const parsedSession = parseCircuitSessionMockId(sessionId);
+  const sessionKey = Number(sessionId);
 
-  if (!parsedSession || parsedSession.circuitId !== id) {
+  if (Number.isNaN(sessionKey)) {
     notFound();
   }
 
@@ -124,16 +139,42 @@ export default async function SessionDetailPage({
         new Date(b.date_end).getTime() - new Date(a.date_end).getTime()
     );
 
-  const latestMeeting = resolveMeetingForCircuitId(completedMeetings, id);
+  const circuitMeetings = resolveMeetingsForCircuitId(completedMeetings, id);
 
-  if (!latestMeeting) {
+  if (circuitMeetings.length === 0) {
     notFound();
   }
 
-  const openF1Sessions = await getSessionsByMeetingKey(latestMeeting.meeting_key);
+  const meetingsToSearch = circuitMeetings.slice(0, 3);
 
-  const availableSessions = openF1Sessions
-    .map((session): CircuitRecentSession | null => {
+  const sessionsByMeeting = await Promise.all(
+    meetingsToSearch.map((meeting) => getSessionsByMeetingKey(meeting.meeting_key))
+  );
+
+  const allSessions = sessionsByMeeting.flat();
+
+  const selectedOpenF1Session = allSessions.find(
+    (session) => session.session_key === sessionKey
+  );
+
+  if (!selectedOpenF1Session) {
+    notFound();
+  }
+
+  const selectedMeeting = meetingsToSearch.find(
+    (meeting) => meeting.meeting_key === selectedOpenF1Session.meeting_key
+  );
+
+  if (!selectedMeeting) {
+    notFound();
+  }
+
+  const sameMeetingSessions = await getSessionsByMeetingKey(
+    selectedMeeting.meeting_key
+  );
+
+  const availableSessions = sameMeetingSessions
+    .map((session): CircuitWeekendSession | null => {
       const mappedType = mapOpenF1SessionNameToCircuitSessionType(
         session.session_name
       );
@@ -143,16 +184,24 @@ export default async function SessionDetailPage({
       }
 
       return {
-        id: buildCircuitSessionMockId(id, session.year, mappedType),
+        id: String(session.session_key),
+        sessionKey: session.session_key,
+        meetingKey: session.meeting_key,
         year: session.year,
         sessionType: mappedType,
+        sessionName: session.session_name,
         date: formatSessionDate(session.date_start),
-        headline: `${mappedType} del ${latestMeeting.meeting_name} en ${latestMeeting.location}.`,
+        headline: `${session.session_name} del ${selectedMeeting.meeting_name} en ${selectedMeeting.location}.`,
         status: "Completed",
         isAvailable: true,
       };
     })
-    .filter((session): session is CircuitRecentSession => session !== null);
+    .filter((session): session is CircuitWeekendSession => session !== null)
+    .sort(
+      (a, b) =>
+        (SESSION_ORDER[a.sessionType] ?? 999) -
+        (SESSION_ORDER[b.sessionType] ?? 999)
+    );
 
   let sessionData;
 
@@ -162,7 +211,15 @@ export default async function SessionDetailPage({
     notFound();
   }
 
-  const selectedType = mapCircuitSessionToHomeType(parsedSession.sessionType);
+  const selectedMappedType = mapOpenF1SessionNameToCircuitSessionType(
+    selectedOpenF1Session.session_name
+  );
+
+  if (!selectedMappedType) {
+    notFound();
+  }
+
+  const selectedType = mapCircuitSessionToHomeType(selectedMappedType);
 
   return (
     <AppShell activePath="/circuits">
@@ -176,7 +233,7 @@ export default async function SessionDetailPage({
 
         <CircuitSessionSelector
           circuitId={id}
-          currentSessionId={sessionId}
+          currentSessionId={String(sessionKey)}
           sessions={availableSessions}
         />
 

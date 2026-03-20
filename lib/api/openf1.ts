@@ -1,3 +1,5 @@
+import { CircuitSessionType } from "@/types/circuit";
+
 const OPENF1_BASE_URL = "https://api.openf1.org/v1";
 
 export type OpenF1Session = {
@@ -364,30 +366,17 @@ export async function getLatestCompletedMeetingForCircuit(
 
 export function mapOpenF1SessionNameToCircuitSessionType(
   sessionName: string
-): "Race" | "Qualifying" | "Sprint" | "FP1" | "FP2" | "FP3" | null {
-  if (sessionName === "Race") {
-    return "Race";
-  }
+): CircuitSessionType | null {
+  const normalized = sessionName.trim().toLowerCase();
 
-  if (sessionName === "Qualifying") {
-    return "Qualifying";
-  }
-
-  if (sessionName === "Sprint" || sessionName === "Sprint Qualifying") {
-    return "Sprint";
-  }
-
-  if (sessionName === "Practice 1") {
-    return "FP1";
-  }
-
-  if (sessionName === "Practice 2") {
-    return "FP2";
-  }
-
-  if (sessionName === "Practice 3") {
-    return "FP3";
-  }
+  if (normalized === "race") return "Race";
+  if (normalized === "qualifying") return "Qualifying";
+  if (normalized === "sprint") return "Sprint";
+  if (normalized === "sprint shootout") return "Sprint Shootout";
+  if (normalized === "sprint qualifying") return "Sprint Shootout";
+  if (normalized === "practice 1" || normalized === "fp1") return "FP1";
+  if (normalized === "practice 2" || normalized === "fp2") return "FP2";
+  if (normalized === "practice 3" || normalized === "fp3") return "FP3";
 
   return null;
 }
@@ -462,7 +451,12 @@ export function findOpenF1SessionByCircuitSessionType(
   const orderedSessions = [...sessions].sort(
     (a, b) => new Date(b.date_start).getTime() - new Date(a.date_start).getTime()
   );
-
+  if (sessionType === "Qualifying") {
+    return (
+      orderedSessions.find((session) => session.session_name === "Qualifying") ??
+      null
+    );
+  }
   if (sessionType === "Sprint") {
     return (
       orderedSessions.find((session) =>
@@ -471,12 +465,7 @@ export function findOpenF1SessionByCircuitSessionType(
     );
   }
 
-  if (sessionType === "Qualifying") {
-    return (
-      orderedSessions.find((session) => session.session_name === "Qualifying") ??
-      null
-    );
-  }
+  
 
   if (sessionType === "Race") {
     return orderedSessions.find((session) => session.session_name === "Race") ?? null;

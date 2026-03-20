@@ -1,6 +1,5 @@
 import type { HomeLatestResponse, SessionType } from "@/types/home";
 import {
-  findOpenF1SessionByCircuitSessionType,
   getDrivers,
   getLatestWeatherForSession,
   getMeetingByKey,
@@ -10,7 +9,7 @@ import {
   getSessionsByMeetingKey,
   getStartingGrid,
   getStints,
-  parseCircuitSessionMockId,
+  mapOpenF1SessionNameToCircuitSessionType,
 } from "@/lib/api/openf1";
 import { circuitVisuals } from "@/lib/data/circuit-visuals";
 
@@ -131,9 +130,18 @@ function formatGapOrStatus(result: {
 }
 
 function mapCircuitSessionTypeToHomeType(
-  sessionType: "Race" | "Qualifying" | "Sprint" | "FP1" | "FP2" | "FP3"
+  sessionType:
+    | "Race"
+    | "Qualifying"
+    | "Sprint"
+    | "Sprint Shootout"
+    | "FP1"
+    | "FP2"
+    | "FP3"
 ): SessionType {
-  if (sessionType === "Qualifying") return "qualifying";
+  if (sessionType === "Qualifying" || sessionType === "Sprint Shootout") {
+    return "qualifying";
+  }
   if (sessionType === "FP1") return "fp1";
   if (sessionType === "FP2") return "fp2";
   if (sessionType === "FP3") return "fp3";
@@ -384,13 +392,35 @@ function buildQuickStats(params: {
   ];
 }
 
+function resolveMeetingsForCircuitId(
+  meetings: OpenF1Meeting[],
+  circuitId: string
+) {
+  const visual = resolveVisualById(circuitId);
+
+  if (!visual) {
+    return [];
+  }
+
+  return meetings.filter((meeting) => {
+    const values = [
+      meeting.meeting_name,
+      meeting.location,
+      meeting.country_name,
+      meeting.circuit_short_name,
+    ];
+
+    return values.some((value) => textMatchesAny(value, visual.aliases));
+  });
+}
+
 export async function getCircuitSessionData(
   circuitId: string,
   sessionId: string
 ): Promise<HomeLatestResponse> {
-  const parsedSession = parseCircuitSessionMockId(sessionId);
+  const sessionKey = Number(sessionId);
 
-  if (!parsedSession || parsedSession.circuitId !== circuitId) {
+  if (Number.isNaN(sessionKey)) {
     throw new Error("sessionId inválido");
   }
 
@@ -408,24 +438,49 @@ export async function getCircuitSessionData(
         new Date(b.date_end).getTime() - new Date(a.date_end).getTime()
     );
 
-  const latestMeeting = resolveMeetingForCircuitId(completedMeetings, circuitId);
+  const circuitMeeting = resolveMeetingForCircuitId(completedMeetings, circuitId);
 
-  if (!latestMeeting) {
+  if (!circuitMeeting) {
     throw new Error("No se encontró un meeting para el circuito");
   }
 
-  const sessions = await getSessionsByMeetingKey(latestMeeting.meeting_key);
+  const candidateMeetings = resolveMeetingsForCircuitId(
+    completedMeetings,
+    circuitId
+  );
 
-  const openF1Session = findOpenF1SessionByCircuitSessionType(
-    sessions,
-    parsedSession.sessionType
+  const allSessions = (
+    await Promise.all(
+      candidateMeetings.slice(0, 3).map((meeting) =>
+        getSessionsByMeetingKey(meeting.meeting_key)
+      )
+    )
+  ).flat();
+
+  const openF1Session = allSessions.find(
+    (session) => session.session_key === sessionKey
   );
 
   if (!openF1Session) {
     throw new Error("No se encontró la sesión en OpenF1");
   }
 
-  const type = mapCircuitSessionTypeToHomeType(parsedSession.sessionType);
+  const mappedType = mapOpenF1SessionNameToCircuitSessionType(
+    openF1Session.session_name
+  );
+
+  if (!mappedType) {
+    throw new Error("Tipo de sesión no soportado");
+  }
+
+  const type = mapCircuitSessionTypeToHomeType(mappedType);
+  const isPractice = type === "fp1" || type === "fp2" || type === "fp3";
+  const isSprint = mappedType === "Sprint";
+  const isSprintShootout = mappedType === "Sprint Shootout";
+  const shouldFetchStartingGrid =
+    type === "race" || type === "qualifying" || isSprint || isSprintShootout;
+  const shouldFetchPitStops = type === "race" || isSprint;
+  const shouldFetchStints = type === "race" || isSprint;
 
   const [
     weather,
@@ -436,17 +491,41 @@ export async function getCircuitSessionData(
     pitRows,
     stintRows,
   ] = await Promise.all([
-    getLatestWeatherForSession(openF1Session.session_key),
-    getMeetingByKey(openF1Session.meeting_key),
+    getLatestWeatherForSession(openF1Session.session_key).catch(() => null),
+    getMeetingByKey(openF1Session.meeting_key).catch(() => null),
     getSessionResults(openF1Session.session_key),
     getDrivers(openF1Session.session_key),
-    resolveStartingGridRows(
-      type,
-      openF1Session.session_key,
-      openF1Session.meeting_key
-    ),
-    getPitStops(openF1Session.session_key),
-    getStints(openF1Session.session_key),
+    shouldFetchStartingGrid && !isPractice
+      ? resolveStartingGridRows(
+          type,
+          openF1Session.session_key,
+          openF1Session.meeting_key
+        ).catch((error) => {
+          console.warn(
+            `No se pudo obtener starting_grid para session_key=${openF1Session.session_key}`,
+            error
+          );
+          return [];
+        })
+      : Promise.resolve([]),
+    shouldFetchPitStops
+      ? getPitStops(openF1Session.session_key).catch((error) => {
+          console.warn(
+            `No se pudo obtener pit para session_key=${openF1Session.session_key}`,
+            error
+          );
+          return [];
+        })
+      : Promise.resolve([]),
+    shouldFetchStints
+      ? getStints(openF1Session.session_key).catch((error) => {
+          console.warn(
+            `No se pudo obtener stints para session_key=${openF1Session.session_key}`,
+            error
+          );
+          return [];
+        })
+      : Promise.resolve([]),
   ]);
 
   const driversByNumber = new Map(
@@ -468,7 +547,9 @@ export async function getCircuitSessionData(
 
   return {
     summary: {
-      grandPrixName: resolveGrandPrixName(meeting),
+      grandPrixName: meeting
+  ? resolveGrandPrixName(meeting)
+  : openF1Session.meeting_name ?? openF1Session.circuit_short_name,
       circuitName:
         meeting?.circuit_short_name ?? openF1Session.circuit_short_name,
       location: meeting
@@ -476,7 +557,7 @@ export async function getCircuitSessionData(
         : `${openF1Session.location}, ${openF1Session.country_name}`,
       date: formatSessionDate(openF1Session.date_start),
       sessionType: openF1Session.session_name,
-      weatherSummary: buildWeatherSummary(weather),
+      weatherSummary: weather ? buildWeatherSummary(weather) : "Sin datos de clima",
     },
     quickStats: buildQuickStats({
       type,

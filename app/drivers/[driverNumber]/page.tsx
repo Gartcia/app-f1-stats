@@ -6,7 +6,7 @@ import { DriverRecentResults } from "@/components/drivers/driver-recent-results"
 import { DriverSessionsList } from "@/components/drivers/driver-sessions-list";
 import {
   getDriverDetailData,
-  getDriverRecentSessions,
+  getDriverRecentWeekends,
 } from "@/lib/mappers/drivers.mapper";
 
 type DriverDetailPageProps = {
@@ -25,9 +25,9 @@ export default async function DriverDetailPage({
     notFound();
   }
 
-const [driver, recentSessions] = await Promise.all([
+const [driver, recentWeekends] = await Promise.all([
   getDriverDetailData(parsedDriverNumber),
-  getDriverRecentSessions(parsedDriverNumber),
+  getDriverRecentWeekends(parsedDriverNumber),
 ]);
 
   if (!driver) {
@@ -66,7 +66,7 @@ const [driver, recentSessions] = await Promise.all([
   gapToLeader={driver.gapToLeader}
   status={driver.status}
 />
-<DriverSessionsList sessions={recentSessions} />
+<DriverSessionsList weekends={recentWeekends} />
       </div>
     </AppShell>
   );
