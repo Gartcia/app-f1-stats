@@ -60,7 +60,7 @@ export function ResultsTable({ results, sessionType }: Props) {
   const showTyres = sessionType === "race" || sessionType === "qualifying";
 
   return (
-    <section className="rounded-[8px] border border-white/10 bg-[#15151E] p-6">
+    <section className="rounded-lg border border-white/10 bg-[#15151E] p-6">
       <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-mono text-[11px] font-medium uppercase tracking-[0.24em] italic text-[#949498]">
@@ -76,13 +76,13 @@ export function ResultsTable({ results, sessionType }: Props) {
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-[8px] border border-white/10 bg-[#0F1014]">
-        <table className="w-full min-w-[920px] text-left text-sm text-white/80">
-          <thead className="border-b border-white/10 bg-white/[0.03] font-mono text-[11px] uppercase tracking-[0.18em] text-[#949498]">
+      <div className="overflow-x-auto rounded-lg border border-white/10 bg-[#0F1014]">
+        <table className="w-full min-w-230 text-left text-sm text-white/80">
+          <thead className="border-b border-white/10 bg-white/3 font-mono text-[11px] uppercase tracking-[0.18em] text-[#949498]">
             <tr>
               <th className="px-4 py-3 font-medium">Pos</th>
-              <th className="min-w-[160px] px-4 py-3 font-medium">Piloto</th>
-              <th className="min-w-[140px] px-4 py-3 font-medium">Equipo</th>
+              <th className="min-w-40 px-4 py-3 font-medium">Piloto</th>
+              <th className="min-w-35 px-4 py-3 font-medium">Equipo</th>
 
               {showGrid && <th className="px-4 py-3 font-medium">Grid</th>}
               {showDelta && <th className="px-4 py-3 font-medium">Δ</th>}
@@ -91,15 +91,15 @@ export function ResultsTable({ results, sessionType }: Props) {
 
               {showPits && <th className="px-4 py-3 font-medium">Pits</th>}
               {showTyres && (
-                <th className="min-w-[120px] px-4 py-3 font-medium">
+                <th className="min-w-30 px-4 py-3 font-medium">
                   Neumáticos
                 </th>
               )}
 
-              <th className="min-w-[110px] px-4 py-3 font-medium">
+              <th className="min-w-27.5 px-4 py-3 font-medium">
                 Top speed
               </th>
-              <th className="min-w-[120px] px-4 py-3 font-medium">Estado</th>
+              <th className="min-w-30 px-4 py-3 font-medium">Estado</th>
             </tr>
           </thead>
 
@@ -107,11 +107,11 @@ export function ResultsTable({ results, sessionType }: Props) {
             {results.map((driver) => (
               <tr
                 key={`${driver.position}-${driver.driverName}`}
-                className="transition hover:bg-white/[0.03]"
+                className="transition hover:bg-white/3"
               >
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-flex min-w-9 items-center justify-center rounded-[4px] border px-2 py-1 font-mono text-xs font-semibold ${getPositionBadgeClass(
+                    className={`inline-flex min-w-9 items-center justify-center rounded-sm border px-2 py-1 font-mono text-xs font-semibold ${getPositionBadgeClass(
                       driver.position
                     )}`}
                   >

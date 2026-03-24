@@ -49,7 +49,7 @@ export function StatChip({
 }: Props) {
   return (
     <span
-      className={`inline-flex rounded-[4px] border px-2.5 py-1 text-[11px] ${
+      className={`inline-flex rounded-sm border px-2.5 py-1 text-[11px] ${
         mono ? "font-mono" : "font-semibold"
       } ${uppercase ? "uppercase tracking-[0.12em]" : ""} ${getToneClasses(
         tone

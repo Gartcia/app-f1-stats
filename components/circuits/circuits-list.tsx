@@ -35,7 +35,7 @@ export function CircuitsList({ circuits }: Props) {
             href={`/circuits/${circuit.id}`}
             className="group overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition hover:border-white/20 hover:bg-white/[0.07]"
           >
-            <div className="border-b border-white/10 bg-gradient-to-br from-white/10 to-transparent p-5">
+            <div className="border-b border-white/10 bg-linear-to-br from-white/10 to-transparent p-5">
               <div className="flex flex-wrap items-center gap-2">
                 {circuit.type && (
                   <span

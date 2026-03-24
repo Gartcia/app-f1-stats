@@ -36,7 +36,7 @@ type InfoCardProps = {
 
 function InfoCard({ label, value, mono = false }: InfoCardProps) {
   return (
-    <div className="rounded-[8px] border border-white/10 bg-[#0F1014] p-4">
+    <div className="rounded-lg border border-white/10 bg-[#0F1014] p-4">
       <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#949498]">
         {label}
       </p>
@@ -53,7 +53,7 @@ function InfoCard({ label, value, mono = false }: InfoCardProps) {
 
 export function SessionSummary({ summary }: Props) {
   return (
-    <section className="relative overflow-hidden rounded-[8px] border border-white/10 bg-[#15151E]">
+    <section className="relative overflow-hidden rounded-lg border border-white/10 bg-[#15151E]">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-0 top-0 h-full w-full bg-[radial-gradient(circle_at_top_left,rgba(225,6,0,0.10),transparent_35%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.03)_0%,rgba(255,255,255,0.00)_40%)]" />

@@ -55,7 +55,7 @@ function SessionTag({
 
 function MetaChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex rounded-[4px] border border-white/10 bg-black/20 px-2.5 py-1 font-mono text-[11px] text-white/80">
+    <span className="inline-flex rounded-sm border border-white/10 bg-black/20 px-2.5 py-1 font-mono text-[11px] text-white/80">
       {children}
     </span>
   );
@@ -68,7 +68,7 @@ export function CircuitRecentSessions({ circuitId, weekends }: Props) {
       description="Un resumen de las últimas sesiones que se llevaron a cabo en este circuito.">
 
       {!weekends || weekends.length === 0 ? (
-        <div className="rounded-[8px] border border-dashed border-white/10 bg-[#0F1014] p-6">
+        <div className="rounded-lg border border-dashed border-white/10 bg-[#0F1014] p-6">
           <p className="text-sm leading-6 text-[#949498]">
             Todavía no cargamos GPs recientes para este circuito.
           </p>
@@ -78,7 +78,7 @@ export function CircuitRecentSessions({ circuitId, weekends }: Props) {
           {weekends.map((weekend) => (
             <article
               key={weekend.id}
-              className="rounded-[8px] border border-white/10 bg-[#0F1014] p-4"
+              className="rounded-lg border border-white/10 bg-[#0F1014] p-4"
             >
               <div className="flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -111,7 +111,7 @@ export function CircuitRecentSessions({ circuitId, weekends }: Props) {
                 {weekend.sessions.map((session) => (
                   <div
                     key={session.id}
-                    className="border-l-2 border-white/10 bg-white/[0.02] px-3 py-3 transition hover:border-[#E10600]/50 hover:bg-white/[0.04]"
+                    className="border-l-2 border-white/10 bg-white/2 px-3 py-3 transition hover:border-[#E10600]/50 hover:bg-white/4"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <SessionTag circuitId={circuitId} session={session} />

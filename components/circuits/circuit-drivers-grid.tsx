@@ -47,7 +47,7 @@ export function CircuitDriversGrid({ drivers }: Props) {
           {drivers.map((driver) => (
             <article
               key={driver.id}
-              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/3 p-4"
             >
               <DriverAvatar driver={driver} />
 

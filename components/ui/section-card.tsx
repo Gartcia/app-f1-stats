@@ -19,7 +19,7 @@ export function SectionCard({
 }: Props) {
   return (
     <section
-      className={`rounded-[8px] border border-white/10 bg-[#15151E] ${className}`}
+      className={`rounded-lg border border-white/10 bg-[#15151E] ${className}`}
     >
       {(eyebrow || title || description) && (
         <div className="border-b border-white/10 px-6 py-5">

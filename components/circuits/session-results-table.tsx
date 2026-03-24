@@ -60,21 +60,21 @@ export function SessionResultsTable({ results }: Props) {
         <div className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="border-b border-white/10 bg-white/[0.03] text-zinc-400">
+              <thead className="border-b border-white/10 bg-white/3 text-zinc-400">
                 <tr>
                   <th className="w-20 px-5 py-4 text-left text-xs font-medium uppercase tracking-[0.16em]">
                     Pos
                   </th>
-                  <th className="min-w-[220px] px-5 py-4 text-left text-xs font-medium uppercase tracking-[0.16em]">
+                  <th className="min-w-55 px-5 py-4 text-left text-xs font-medium uppercase tracking-[0.16em]">
                     Piloto
                   </th>
-                  <th className="min-w-[180px] px-5 py-4 text-left text-xs font-medium uppercase tracking-[0.16em]">
+                  <th className="min-w-45 px-5 py-4 text-left text-xs font-medium uppercase tracking-[0.16em]">
                     Equipo
                   </th>
                   <th className="w-28 px-5 py-4 text-left text-xs font-medium uppercase tracking-[0.16em]">
                     Vueltas
                   </th>
-                  <th className="min-w-[140px] px-5 py-4 text-left text-xs font-medium uppercase tracking-[0.16em]">
+                  <th className="min-w-35 px-5 py-4 text-left text-xs font-medium uppercase tracking-[0.16em]">
                     Gap / Tiempo
                   </th>
                   <th className="w-36 px-5 py-4 text-left text-xs font-medium uppercase tracking-[0.16em]">
@@ -87,7 +87,7 @@ export function SessionResultsTable({ results }: Props) {
                 {results.map((result) => (
                   <tr
                     key={`${result.position}-${result.driver}`}
-                    className="transition hover:bg-white/[0.03]"
+                    className="transition hover:bg-white/3"
                   >
                     <td className="px-5 py-4 align-middle">
                       <span

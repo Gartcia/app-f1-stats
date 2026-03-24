@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { DriverHeroCard } from "@/components/drivers/driver-hero-card";
 import { DriverRecentResults } from "@/components/drivers/driver-recent-results";
 import { DriverSessionsList } from "@/components/drivers/driver-sessions-list";
 import {

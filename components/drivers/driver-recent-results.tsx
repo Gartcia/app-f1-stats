@@ -33,7 +33,7 @@ function ResultCard({
   mono?: boolean;
 }) {
   return (
-    <div className="rounded-[8px] border border-white/10 bg-[#0F1014] p-4 transition hover:border-white/15 hover:bg-white/[0.03]">
+    <div className="rounded-lg border border-white/10 bg-[#0F1014] p-4 transition hover:border-white/15 hover:bg-white/3">
       <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#949498]">
         {label}
       </p>
@@ -71,13 +71,13 @@ export function DriverRecentResults({
         <ResultCard label="Vueltas" value={lapsCompleted} mono />
         <ResultCard label="Gap" value={gapToLeader} mono />
 
-        <div className="rounded-[8px] border border-white/10 bg-[#0F1014] p-4 transition hover:border-white/15 hover:bg-white/[0.03]">
+        <div className="rounded-lg border border-white/10 bg-[#0F1014] p-4 transition hover:border-white/15 hover:bg-white/3">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#949498]">
             Estado
           </p>
           <div className="mt-3">
             <span
-              className={`inline-flex rounded-[4px] border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${getStatusClasses(
+              className={`inline-flex rounded-sm border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${getStatusClasses(
                 status
               )}`}
             >

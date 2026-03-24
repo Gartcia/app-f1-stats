@@ -43,7 +43,7 @@ function getSessionTypeClasses(sessionType: string) {
 
 function DataChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex rounded-[4px] border border-white/10 bg-black/20 px-2.5 py-1 font-mono text-[11px] text-white/80">
+    <span className="inline-flex rounded-sm border border-white/10 bg-black/20 px-2.5 py-1 font-mono text-[11px] text-white/80">
       {children}
     </span>
   );
@@ -84,7 +84,7 @@ export function DriverSessionsList({ weekends }: Props) {
           {weekends.map((weekend) => (
             <article
               key={weekend.id}
-              className="rounded-[8px] border border-white/10 bg-[#0F1014] p-4"
+              className="rounded-lg border border-white/10 bg-[#0F1014] p-4"
             >
               <div className="flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -96,7 +96,7 @@ export function DriverSessionsList({ weekends }: Props) {
                   </p>
                 </div>
 
-                <span className="inline-flex rounded-[4px] border border-white/10 bg-white/[0.04] px-3 py-1 font-mono text-[11px] text-white/80">
+                <span className="inline-flex rounded-sm border border-white/10 bg-white/4 px-3 py-1 font-mono text-[11px] text-white/80">
                   {new Intl.DateTimeFormat("es-AR", {
                     day: "2-digit",
                     month: "short",
@@ -109,7 +109,7 @@ export function DriverSessionsList({ weekends }: Props) {
                 {weekend.sessions.map((session) => (
                   <div
                     key={session.id}
-                    className="border-l-2 border-white/10 bg-white/[0.02] px-3 py-3 transition hover:border-[#E10600]/50 hover:bg-white/[0.04]"
+                    className="border-l-2 border-white/10 bg-white/2 px-3 py-3 transition hover:border-[#E10600]/50 hover:bg-white/4"
                   >
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex flex-wrap items-center gap-2">
@@ -126,7 +126,7 @@ export function DriverSessionsList({ weekends }: Props) {
                         <DataChip>{session.gapToLeader}</DataChip>
 
                         <span
-                          className={`inline-flex rounded-[4px] border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${getStatusClasses(
+                          className={`inline-flex rounded-sm border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${getStatusClasses(
                             session.status
                           )}`}
                         >

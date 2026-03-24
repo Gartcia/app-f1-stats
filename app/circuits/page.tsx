@@ -9,7 +9,7 @@ export default async function CircuitsPage() {
     <AppShell activePath="/circuits">
       <div className="space-y-6">
         <section className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-          <div className="border-b border-white/10 bg-gradient-to-br from-white/10 to-transparent p-6">
+          <div className="border-b border-white/10 bg-linear-to-br from-white/10 to-transparent p-6">
             <p className="text-[11px] uppercase tracking-[0.22em] text-zinc-400">
               Circuits
             </p>

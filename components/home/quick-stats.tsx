@@ -12,7 +12,7 @@ export function QuickStats({ stats }: Props) {
         {stats.map((stat) => (
           <article
             key={stat.label}
-            className="rounded-[8px] border border-white/10 bg-[#0F1014] p-4 transition hover:border-white/15 hover:bg-white/[0.03]"
+            className="rounded-lg border border-white/10 bg-[#0F1014] p-4 transition hover:border-white/15 hover:bg-white/3"
           >
             <p className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-[#949498]">
               {stat.label}

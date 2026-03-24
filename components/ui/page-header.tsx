@@ -21,7 +21,7 @@ export function PageHeader({
   watermark,
 }: Props) {
   return (
-    <section className="relative overflow-hidden rounded-[8px] border border-white/10 bg-[#15151E]">
+    <section className="relative overflow-hidden rounded-lg border border-white/10 bg-[#15151E]">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-0 top-0 h-full w-full bg-[radial-gradient(circle_at_top_left,rgba(225,6,0,0.10),transparent_35%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.03)_0%,rgba(255,255,255,0.00)_40%)]" />
@@ -37,7 +37,7 @@ export function PageHeader({
         {backHref ? (
           <Link
             href={backHref}
-            className="mb-5 inline-flex items-center gap-2 rounded-[4px] border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm text-[#949498] transition hover:border-white/20 hover:text-white"
+            className="mb-5 inline-flex items-center gap-2 rounded-sm border border-white/10 bg-white/3 px-3 py-1.5 text-sm text-[#949498] transition hover:border-white/20 hover:text-white"
           >
             ← {backLabel}
           </Link>

@@ -25,7 +25,7 @@ export function DriverHeroCard({
 }: Props) {
   return (
     <section className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-      <div className="border-b border-white/10 bg-gradient-to-br from-white/10 to-transparent p-6">
+      <div className="border-b border-white/10 bg-linear-to-br from-white/10 to-transparent p-6">
         <div className="flex flex-col gap-6 md:flex-row md:items-center">
           {headshotUrl ? (
             <img
